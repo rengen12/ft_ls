@@ -20,6 +20,7 @@ typedef struct	s_fl
 	int 	a;
 	int 	r;
 	int 	t;
+	int 	dir;
 }				t_fl;
 
 #endif

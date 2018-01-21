@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include "ft_ls.h"
+#include <dirent.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 void	handle_flags(t_fl *fl, int ac, char **av)
 {
@@ -11,6 +14,7 @@ void	handle_flags(t_fl *fl, int ac, char **av)
 	fl->l = 0;
 	fl->r = 0;
 	fl->t = 0;
+	fl->dir = 0;
 	if (ac > 1)
 	{
 		while (++i < ac)
@@ -32,7 +36,12 @@ void	handle_flags(t_fl *fl, int ac, char **av)
 				}
 			}
 			else
-				continue ;
+			{
+				if (!fl->dir)
+					fl->dir = i;
+				else
+					continue ;
+			}
 		}
 	}
 }
@@ -40,8 +49,20 @@ void	handle_flags(t_fl *fl, int ac, char **av)
 int		main(int ac, char **av)
 {
 	t_fl	fl;
+	DIR		*dirp;
+	struct dirent *dir;
+	struct stat stbuf;
+
 
 	handle_flags(&fl, ac, av);
+	dirp = opendir("../");
+	int i = 14;
 
+	while (i--)
+	{
+		dir = readdir(dirp);
+		stat(dir->d_name, &stbuf);
+	}
+	closedir(dirp);
 	return (0);
 }
