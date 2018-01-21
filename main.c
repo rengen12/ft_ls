@@ -5,7 +5,7 @@ void	handle_flags(t_fl *fl, int ac, char **av)
 {
 	int i;
 
-	i = 1;
+	i = 0;
 	fl->a = 0;
 	fl->br = 0;
 	fl->l = 0;
@@ -13,11 +13,26 @@ void	handle_flags(t_fl *fl, int ac, char **av)
 	fl->t = 0;
 	if (ac > 1)
 	{
-		while (i < ac)
+		while (++i < ac)
 		{
 			if (av[i][0] == '-')
-				
-			i++;
+			{
+				while (*++av[i])
+				{
+					if (*av[i] == 'a')
+						fl->a = 1;
+					else if (*av[i] == 'R')
+						fl->br = 1;
+					else if (*av[i] == 'l')
+						fl->l = 1;
+					else if (*av[i] == 'r')
+						fl->r = 1;
+					else if (*av[i] == 't')
+						fl->t = 1;
+				}
+			}
+			else
+				continue ;
 		}
 	}
 }
