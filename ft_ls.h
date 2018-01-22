@@ -13,6 +13,8 @@
 #ifndef FT_LS_H
 # define FT_LS_H
 
+# include "libft/libft.h"
+
 typedef struct	s_fl
 {
 	int 	l;
@@ -22,5 +24,12 @@ typedef struct	s_fl
 	int 	t;
 	int 	dir;
 }				t_fl;
+
+typedef struct	s_files
+{
+	struct dirent	*f;
+	struct s_files	*next;
+	struct s_files	*prev;
+}				t_files;
 
 #endif

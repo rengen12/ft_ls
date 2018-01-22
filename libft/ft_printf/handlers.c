@@ -12,7 +12,7 @@
 
 #include "handle_printf.h"
 
-size_t	handle_sharp(size_t nb, t_fs *fs)
+size_t		handle_sharp(size_t nb, t_fs *fs)
 {
 	size_t i;
 
@@ -29,7 +29,7 @@ size_t	handle_sharp(size_t nb, t_fs *fs)
 	return (i);
 }
 
-void	handle_flags(t_fs *fs, char ch)
+static void	handle_flags(t_fs *fs, char ch)
 {
 	if (ch == '-')
 		fs->minus = 1;
@@ -43,7 +43,7 @@ void	handle_flags(t_fs *fs, char ch)
 		fs->zero = 1;
 }
 
-void	handle_modif(t_fs *fs, char ch)
+static void	handle_modif(t_fs *fs, char ch)
 {
 	if (ch == 'h')
 		fs->h++;
@@ -55,7 +55,7 @@ void	handle_modif(t_fs *fs, char ch)
 		fs->j++;
 }
 
-void	handle_str_point(va_list ap, const char **s, t_fs *fs)
+static void	handle_str_point(va_list ap, const char **s, t_fs *fs)
 {
 	(*s)++;
 	if (**s == '*')
@@ -72,7 +72,7 @@ void	handle_str_point(va_list ap, const char **s, t_fs *fs)
 	fs->prec_exist = 1;
 }
 
-size_t	handle_str_fs(va_list ap, const char **s, t_fs *fs)
+size_t		handle_str_fs(va_list ap, const char **s, t_fs *fs)
 {
 	while (**s == '-' || **s == '+' || **s == '#' || **s == ' ' || \
 			**s == '0')
