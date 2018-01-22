@@ -89,8 +89,8 @@ t_files	*handle_dir(char *name)
 
 	while ((f = readdir(dfd)))
 	{
-		if (!ft_strcmp(f->d_name, ".") || !ft_strcmp(f->d_name, ".."))
-			continue ;
+		/*if (!ft_strcmp(f->d_name, ".") || !ft_strcmp(f->d_name, ".."))
+			continue ;*/
 		add_to_list(&fs, f);
 		stat(f->d_name, &stbuf);
 	}
@@ -127,8 +127,56 @@ void	print_dll(t_files *head)
 {
 	while (head)
 	{
-		ft_printf("%s\n", head->f->d_name);
+		ft_putendl(head->f->d_name);
 		head = head->next;
+	}
+}
+
+void	sort_dll(t_files *fs)
+{
+	int f;
+
+	f = 1;
+	while (f)
+	{
+		f = 0;
+		fs = find_head(fs);
+		while (fs->next)
+			if (ft_strcmp(fs->f->d_name, fs->next->f->d_name) < 0)
+			{
+				f = 1;
+				dll_paste_aft(fs, fs->next);
+			}
+			else
+				fs = fs->next;
+	}
+}
+
+void just_l(t_files *fs)
+{
+	int		ml;
+
+	ml = ft_strlen(fs->f->d_name);
+	while (fs->prev)
+	{
+		if (ft_strlen(fs->prev->f->d_name) > ml)
+			ml = ft_strlen(fs->prev->f->d_name);
+		fs = fs->prev;
+	}
+	if (ft_strlen(fs->f->d_name) > ml)
+		ml = ft_strlen(fs->f->d_name);
+	while (fs->next)
+	{
+		if (ft_strlen(fs->next->f->d_name) > ml)
+			ml = ft_strlen(fs->next->f->d_name);
+		fs = fs->next;
+	}
+	if (ft_strlen(fs->f->d_name) > ml)
+		ml = ft_strlen(fs->f->d_name);
+	while (fs)
+	{
+		printf("%*s\n", ml, fs->f->d_name);
+		fs = fs->prev;
 	}
 }
 
@@ -139,16 +187,21 @@ int		main(int ac, char **av)
 
 	//printf("S_IFDIR %d\n", S_IFDIR);
 	//printf("S_IFMT %d\n", S_IFMT);
-	handle_flags(&fl, ac, av);
+	//handle_flags(&fl, ac, av);
 	fs = handle_dir("../libft");
 
-	ft_putendl("origin");
-	print_dll(fs);
+	/*ft_putendl("origin");
+	print_dll(fs);*/
 
-	
+	sort_dll(fs);
+	just_l(fs);
+	/*ft_putendl("sorted");
 	fs = find_head(fs);
-	ft_putendl("\nswapped");
-	print_dll(fs);
+	print_dll(fs);*/
+
+	//fs = find_head(fs);
+	//ft_putendl("\nswapped");
+	//print_dll(fs);
 	return (0);
 }
 
