@@ -14,16 +14,18 @@
 # define FT_LS_H
 
 # include "libft/libft.h"
+# include <errno.h>
 
-typedef struct	s_fl
+typedef struct	s_flags
 {
 	int 	l;
 	int 	br;
 	int 	a;
 	int 	r;
 	int 	t;
-	int 	dir;
-}				t_fl;
+	int 	ac;
+	int		st;
+}				t_flags;
 
 typedef struct	s_files
 {

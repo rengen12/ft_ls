@@ -20,11 +20,11 @@ size_t		handle_sharp(size_t nb, t_fs *fs)
 	if (fs->zero)
 	{
 		if ((nb && fs->ch == 'x' && fs->sh) || fs->ch == 'p')
-			i += ft_putstr("0x", fs);
+			i += ft_putstr_pf("0x", fs);
 		else if (nb && fs->ch == 'X' && fs->sh)
-			i += ft_putstr("0X", fs);
+			i += ft_putstr_pf("0X", fs);
 		else if (nb && (fs->ch == 'o' || fs->ch == 'O') && fs->sh)
-			i += ft_putstr("0", fs);
+			i += ft_putstr_pf("0", fs);
 	}
 	return (i);
 }

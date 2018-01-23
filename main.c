@@ -3,6 +3,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include "libft/ft_printf/ft_printf.c"
 
 t_files *find_el(t_files *head, char *name)
 {
@@ -59,7 +60,7 @@ void dll_paste_aft(t_files *fr, t_files *aft)
 	}
 }
 
-void add_to_list(t_files **fs, struct dirent *f)
+void add_to_dll(t_files **fs, struct dirent *f)
 {
 	t_files	*tmp;
 
@@ -86,19 +87,23 @@ t_files	*handle_dir(char *name)
 	fs = NULL;
 	dfd = opendir(name);
 	//dir = (struct dirent *)malloc(sizeof(struct dirent));
-
+	if (!dfd)
+	{
+		perror(strerror(errno));
+		return (NULL);
+	}
 	while ((f = readdir(dfd)))
 	{
 		/*if (!ft_strcmp(f->d_name, ".") || !ft_strcmp(f->d_name, ".."))
 			continue ;*/
-		add_to_list(&fs, f);
+		add_to_dll(&fs, f);
 		stat(f->d_name, &stbuf);
 	}
 	closedir(dfd);
 	return (fs);
 }
 
-void	handle_flags(t_fl *fl, int ac, char **av)
+void	handle_flags(t_flags *fl, int ac, char **av)
 {
 	int i;
 
@@ -108,7 +113,7 @@ void	handle_flags(t_fl *fl, int ac, char **av)
 	fl->l = 0;
 	fl->r = 0;
 	fl->t = 0;
-	fl->dir = 0;
+	fl->ac = ac;
 	while (++i < ac && av[i][0] == '-')
 		while (*++av[i])
 				if (*av[i] == 'a')
@@ -121,6 +126,7 @@ void	handle_flags(t_fl *fl, int ac, char **av)
 					fl->r = 1;
 				else if (*av[i] == 't')
 					fl->t = 1;
+	fl->st = (i < ac) ? i : 0;
 }
 
 void	print_dll(t_files *head)
@@ -137,7 +143,7 @@ void	sort_dll(t_files *fs)
 	int f;
 
 	f = 1;
-	while (f)
+	while (f && fs)
 	{
 		f = 0;
 		fs = find_head(fs);
@@ -152,49 +158,88 @@ void	sort_dll(t_files *fs)
 	}
 }
 
-void just_l(t_files *fs)
+size_t	count_col_width(t_files **fs)
 {
-	int		ml;
+	size_t	ml;
 
-	ml = ft_strlen(fs->f->d_name);
-	while (fs->prev)
+	ml = 0;
+	if (fs)
 	{
-		if (ft_strlen(fs->prev->f->d_name) > ml)
-			ml = ft_strlen(fs->prev->f->d_name);
-		fs = fs->prev;
+		ml = ft_strlen((*fs)->f->d_name);
+		while ((*fs)->prev)
+		{
+			if (ft_strlen((*fs)->prev->f->d_name) > ml)
+				ml = ft_strlen((*fs)->prev->f->d_name);
+			*fs = (*fs)->prev;
+		}
+		if (ft_strlen((*fs)->f->d_name) > ml)
+			ml = ft_strlen((*fs)->f->d_name);
+		while ((*fs)->next)
+		{
+			if (ft_strlen((*fs)->next->f->d_name) > ml)
+				ml = ft_strlen((*fs)->next->f->d_name);
+			*fs = (*fs)->next;
+		}
+		if (ft_strlen((*fs)->f->d_name) > ml)
+			ml = ft_strlen((*fs)->f->d_name);
 	}
-	if (ft_strlen(fs->f->d_name) > ml)
-		ml = ft_strlen(fs->f->d_name);
-	while (fs->next)
+	return (ml);
+}
+
+void just_l(t_files *fs, t_flags *fl)
+{
+	size_t	ml;
+	size_t	newcol;
+
+	if (fs && fl)
 	{
-		if (ft_strlen(fs->next->f->d_name) > ml)
-			ml = ft_strlen(fs->next->f->d_name);
-		fs = fs->next;
+		ml = count_col_width(&fs); //need new start position??
+		newcol = 0;
+		while (fs)
+		{
+			if ((fs->f->d_name[0] == '.' && fl->a) || fs->f->d_name[0] != '.')
+			{
+				newcol += ml + 2;
+				ft_printf("%-*s", (int)ml + 2, fs->f->d_name);
+				if (newcol + ml + 2 > 80)
+				{
+					newcol = 0;
+					ft_putchar('\n');
+				}
+			}
+			fs = fs->prev;
+		}
 	}
-	if (ft_strlen(fs->f->d_name) > ml)
-		ml = ft_strlen(fs->f->d_name);
-	while (fs)
+}
+
+void	delete_dll(t_files *fs)
+{
+	if (fs)
 	{
-		printf("%*s\n", ml, fs->f->d_name);
-		fs = fs->prev;
+		if (fs->next)
+			delete_dll(fs->next);
+		free(fs);
 	}
 }
 
 int		main(int ac, char **av)
 {
-	t_fl	fl;
+	t_flags	fl;
 	t_files *fs;
 
 	//printf("S_IFDIR %d\n", S_IFDIR);
 	//printf("S_IFMT %d\n", S_IFMT);
-	//handle_flags(&fl, ac, av);
+	handle_flags(&fl, ac, av);
 	fs = handle_dir("../libft");
 
-	/*ft_putendl("origin");
-	print_dll(fs);*/
+	//ft_putendl("origin");
+	//print_dll(fs);
 
 	sort_dll(fs);
-	just_l(fs);
+	just_l(fs, &fl);
+	//print_dll(fs);
+	//delete_dll(find_head(fs));
+	//print_dll(fs);
 	/*ft_putendl("sorted");
 	fs = find_head(fs);
 	print_dll(fs);*/

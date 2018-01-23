@@ -18,7 +18,7 @@ NAME = libft.a
 HEADER = -I ./
 OBJFOLD = src/obj/
 PRINTFFOLD = ./ft_printf
-SRC = ./src
+SRCDIR = ./src/
 SRC = ft_memset.c ft_bzero.c ft_memcpy.c ft_memccpy.c ft_memmove.c \
 	  ft_memchr.c ft_memcmp.c ft_strlen.c ft_strdup.c ft_strcpy.c \
 	  ft_strncpy.c ft_strcat.c ft_strncat.c ft_strlcat.c ft_strchr.c \
@@ -37,7 +37,7 @@ SRC = ft_memset.c ft_bzero.c ft_memcpy.c ft_memccpy.c ft_memmove.c \
 	  ft_div_mod.c ft_srch_arrelem.c ft_arrrev.c ft_arrnew.c ft_putarr.c \
 	  get_next_line.c
 
-OBJ = $(addprefix $(OBJFOLD),$(patsubst %.c, %.o, $(SRCDIR)$(SRC)))
+OBJ = $(addprefix $(OBJFOLD),$(patsubst %.c, %.o, $(SRC)))
 PRINTFOBJ = ./ft_printf/obj/*.o
 
 all:				$(NAME)
@@ -48,10 +48,9 @@ $(NAME):			$(OBJ)
 	@ranlib $(NAME)
 	@echo "Libft: done"
 
-$(OBJFOLD)%.o:
+$(OBJFOLD)%.o:		$(SRCDIR)%.c
 	@mkdir -p $(OBJFOLD)
-	@$(CC) $(CFLAGS) $(HEADER) -c $(patsubst src/obj/%.o,src/%.c, $@) -o $@
-
+	@$(CC) $(CFLAGS) $(HEADER) -c $< -o $@
 
 clean:
 	@make -C $(PRINTFFOLD) -f Makefile clean

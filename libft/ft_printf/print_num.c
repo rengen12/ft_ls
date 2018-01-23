@@ -55,7 +55,7 @@ size_t	print_unsig(t_fs *fs, va_list ap)
 		systemstr = "01";
 	str = ft_convert_base_printf(var, systemstr, fs);
 	i += padding(fs, ft_strlen_printf(str) + i);
-	i += ft_putstr(str, fs);
+	i += ft_putstr_pf(str, fs);
 	ft_strdel(&str);
 	return (i);
 }

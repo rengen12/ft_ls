@@ -32,14 +32,14 @@ size_t		padding(t_fs *fs, int wordlen)
 			!fs->minus && !fs->zero && fs->prec + (fs->nf || \
 			fs->plus || fs->space) < fs->width)
 	{
-		i += ft_putchar(' ');
+		i += ft_putchar_pf(' ');
 		fs->width--;
 	}
 	if (!ft_strchr("feEd%", fs->ch) || (fs->ch == '%' && fs->zero))
 		while (fs->prec > wordlen && (((fs->ch == 'c' || fs->ch == 'C') \
 				&& fs->zero) || (fs->ch != 'c' && fs->ch != 'C')))
 		{
-			i += ft_putchar('0');
+			i += ft_putchar_pf('0');
 			fs->prec--;
 		}
 	return (i);
@@ -52,7 +52,7 @@ size_t		padding_after(t_fs *fs, int wordlen)
 	i = 0;
 	while (fs->width > wordlen && fs->minus)
 	{
-		i += ft_putchar(' ');
+		i += ft_putchar_pf(' ');
 		fs->width--;
 	}
 	return (i);
@@ -65,7 +65,7 @@ size_t		padding_afsign(t_fs *fs, int wordlen)
 	i = 0;
 	while (fs->prec > wordlen && !ft_strchr("feE", fs->ch))
 	{
-		i += ft_putchar('0');
+		i += ft_putchar_pf('0');
 		fs->prec--;
 	}
 	return (i);
@@ -82,12 +82,12 @@ size_t		padding_str(t_fs *fs, int wordlen)
 		fs->prec = fs->width;
 	while (fs->width > wordlen && !fs->minus && !fs->zero)
 	{
-		i += ft_putchar(' ');
+		i += ft_putchar_pf(' ');
 		fs->width--;
 	}
 	while (fs->prec > wordlen && fs->zero)
 	{
-		i += ft_putchar('0');
+		i += ft_putchar_pf('0');
 		fs->prec--;
 	}
 	return (i);

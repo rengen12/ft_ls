@@ -28,7 +28,7 @@ size_t	print_ordsymb(const char **s)
 			break ;
 		}
 		if (**s)
-			i += ft_putchar(*(*s)++);
+			i += ft_putchar_pf(*(*s)++);
 	}
 	return (i);
 }
@@ -56,7 +56,7 @@ size_t	print_str_fs(t_fs *fs, va_list ap)
 	else
 	{
 		i += padding(fs, 1);
-		i += ft_putchar(fs->ch);
+		i += ft_putchar_pf(fs->ch);
 		i += padding_after(fs, i);
 	}
 	return (i);

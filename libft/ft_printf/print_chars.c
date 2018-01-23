@@ -29,9 +29,9 @@ size_t	print_string(t_fs *fs, va_list ap)
 	l = (l > (size_t)fs->prec && fs->prec_exist) ? (size_t)fs->prec : l;
 	i += padding_str(fs, l);
 	if (!str)
-		i += ft_putstr("(null)", fs);
+		i += ft_putstr_pf("(null)", fs);
 	else if (fs->ch == 's' && fs->l == 0)
-		i += ft_putstr(str, fs);
+		i += ft_putstr_pf(str, fs);
 	else if (fs->ch == 'S' || (fs->ch == 's' && fs->l))
 		i += ft_putnstr_u(str, l);
 	return (i);
@@ -46,13 +46,13 @@ size_t	print_char(t_fs *fs, va_list ap)
 	var = 0;
 	i += padding(fs, 1);
 	if (fs->ch == '%')
-		i += ft_putchar('%');
+		i += ft_putchar_pf('%');
 	else
 		var = va_arg(ap, int);
 	if (fs->ch != '%')
 	{
 		if (fs->ch == 'c' && fs->l == 0)
-			i += ft_putchar((char)var);
+			i += ft_putchar_pf((char)var);
 		else if (fs->ch == 'C' || (fs->ch == 'c' && fs->l))
 			i += ft_putchar_u(var);
 	}

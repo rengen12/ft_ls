@@ -19,8 +19,8 @@ static size_t	print_sym_e(t_fs *fs, size_t i_e)
 	i = 0;
 	if (fs->ch == 'e' || fs->ch == 'E')
 	{
-		i += ft_putchar(fs->ch);
-		i += ft_putchar('+');
+		i += ft_putchar_pf(fs->ch);
+		i += ft_putchar_pf('+');
 		if (i_e >= 10)
 			i += ft_putnbr_prntf(i_e, fs);
 		else
@@ -71,7 +71,7 @@ size_t			print_float(t_fs *fs, va_list ap)
 	i += ft_putnbr_prntf((size_t)var, fs);
 	fs->nf = 0;
 	if (fs->prec > 0)
-		i += ft_putchar('.');
+		i += ft_putchar_pf('.');
 	while (fs->prec-- > 0)
 	{
 		var -= (size_t)var;

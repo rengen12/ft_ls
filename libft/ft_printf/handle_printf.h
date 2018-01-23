@@ -72,10 +72,9 @@ typedef struct	s_fs
 
 int				ft_putchar_u(size_t c);
 size_t			ft_putstr_u(char *s);
-char			*ft_itoa(size_t n);
 char			*ft_convert_base_printf(size_t nb, char *base_to, t_fs *fs);
-size_t			ft_putchar(char c);
-size_t			ft_putstr(char const *s, t_fs *fs);
+size_t			ft_putchar_pf(char c);
+size_t			ft_putstr_pf(char const *s, t_fs *fs);
 size_t			ft_strlen_printf(const char *s);
 void			ft_memdel(void **ap);
 char			*ft_strnew(size_t size);

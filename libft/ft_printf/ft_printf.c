@@ -88,5 +88,5 @@ int				ft_printf(const char *format, ...)
 		ft_memdel((void **)&fs);
 	}
 	va_end(ap);
-	return (i);
+	return ((int)i);
 }

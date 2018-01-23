@@ -16,7 +16,7 @@ static size_t	ft_putnbr_rec(size_t n, size_t i)
 {
 	if (n >= 10)
 		i = ft_putnbr_rec(n / 10, i);
-	i += ft_putchar((char)((n % 10) + '0'));
+	i += ft_putchar_pf((char)((n % 10) + '0'));
 	return (i);
 }
 
@@ -33,11 +33,11 @@ size_t			ft_putnbr_prntf(ssize_t nb, t_fs *fs)
 	if (fs)
 	{
 		if (!fs->nf && !fs->plus && fs->space)
-			i += ft_putchar(' ');
+			i += ft_putchar_pf(' ');
 		else if (!fs->nf && fs->plus)
-			i += ft_putchar('+');
+			i += ft_putchar_pf('+');
 		else if (fs->nf)
-			i += ft_putchar('-');
+			i += ft_putchar_pf('-');
 		i += padding_afsign(fs, ft_wordlen(nb));
 	}
 	i += ft_putnbr_rec(n, 0);
