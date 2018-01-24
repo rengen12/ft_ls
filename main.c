@@ -3,6 +3,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include "libft/src/ft_putstr.c"
 
 t_files *find_el(t_files *head, char *name)
 {
@@ -27,6 +28,14 @@ t_files	*find_head(t_files *el)
 	if (el)
 		while (el->prev)
 			el = el->prev;
+	return (el);
+}
+
+t_files	*find_tail(t_files *el)
+{
+	if (el)
+		while (el->next)
+			el = el->next;
 	return (el);
 }
 
@@ -59,15 +68,16 @@ void dll_paste_aft(t_files *fr, t_files *aft)
 	}
 }
 
-void add_to_dll(t_files **fs, struct dirent *f)
+void add_to_dll(t_files **fs, struct dirent *f, char *name)
 {
 	t_files	*tmp;
 
-	if (fs && f)
+	if (fs && (f || name))
 	{
 		if (!(tmp = (t_files *)malloc(sizeof(t_files))))
 			return ;
 		tmp->f = f;
+		tmp->name = name;
 		tmp->next = *fs;
 		tmp->prev = NULL;
 		if (*fs)
@@ -91,12 +101,12 @@ t_files	*handle_dir(char *name)
 		perror(strerror(errno));
 		return (NULL);
 	}
-	ft_putnbr(stat("../libft/src", &stbuf));
+	//ft_putnbr(stat("../libft/src", &stbuf));
 	while ((f = readdir(dfd)))
 	{
 		/*if (!ft_strcmp(f->d_name, ".") || !ft_strcmp(f->d_name, ".."))
 			continue ;*/
-		add_to_dll(&fs, f);
+		add_to_dll(&fs, f, NULL);
 		stat(f->d_name, &stbuf);
 	}
 	closedir(dfd);
@@ -148,7 +158,8 @@ void	sort_dll(t_files *fs)
 		f = 0;
 		fs = find_head(fs);
 		while (fs->next)
-			if (ft_strcmp(fs->f->d_name, fs->next->f->d_name) < 0)
+			if ((fs->name && ft_strcmp(fs->name, fs->next->name) < 0) || (fs->f && \
+					ft_strcmp(fs->f->d_name, fs->next->f->d_name) < 0))
 			{
 				f = 1;
 				dll_paste_aft(fs, fs->next);
@@ -165,49 +176,55 @@ size_t	count_col_width(t_files **fs)
 	ml = 0;
 	if (fs)
 	{
-		ml = ft_strlen((*fs)->f->d_name);
+		ml = ft_strlen((*fs)->f ? (*fs)->f->d_name : (*fs)->name);
 		while ((*fs)->prev)
 		{
-			if (ft_strlen((*fs)->prev->f->d_name) > ml)
-				ml = ft_strlen((*fs)->prev->f->d_name);
+			if (ft_strlen((*fs)->f ? (*fs)->prev->f->d_name : (*fs)->name) > ml)
+				ml = ft_strlen((*fs)->f ? (*fs)->prev->f->d_name : (*fs)->name);
 			*fs = (*fs)->prev;
 		}
-		if (ft_strlen((*fs)->f->d_name) > ml)
-			ml = ft_strlen((*fs)->f->d_name);
+		if (ft_strlen((*fs)->f ? (*fs)->f->d_name : (*fs)->name) > ml)
+			ml = ft_strlen((*fs)->f ? (*fs)->f->d_name : (*fs)->name);
 		while ((*fs)->next)
 		{
-			if (ft_strlen((*fs)->next->f->d_name) > ml)
-				ml = ft_strlen((*fs)->next->f->d_name);
+			if (ft_strlen((*fs)->f ? (*fs)->next->f->d_name : (*fs)->name) > ml)
+				ml = ft_strlen((*fs)->f ? (*fs)->next->f->d_name : (*fs)->name);
 			*fs = (*fs)->next;
 		}
-		if (ft_strlen((*fs)->f->d_name) > ml)
-			ml = ft_strlen((*fs)->f->d_name);
+		if (ft_strlen((*fs)->f ? (*fs)->f->d_name : (*fs)->name) > ml)
+			ml = ft_strlen((*fs)->f ? (*fs)->f->d_name : (*fs)->name);
 	}
 	return (ml);
 }
 
-void just_l(t_files *fs, t_flags *fl)
+void just_l(t_files *fs, t_flags *fl, int f)
 {
 	size_t	ml;
 	size_t	newcol;
 
 	if (fs && fl)
 	{
-		ml = count_col_width(&fs); //need new start position??
+		ml = count_col_width(&fs);
 		newcol = 0;
+		if (fl->r)
+			fs = find_head(fs);
 		while (fs)
 		{
-			if ((fs->f->d_name[0] == '.' && fl->a) || fs->f->d_name[0] != '.')
+			if ((!f && ((fs->f && fs->f->d_name[0] == '.' && fl->a) || (fs->f && fs->f->d_name[0] != '.'))) || (f && fs->name))
 			{
 				newcol += ml + 2;
-				ft_printf("%-*s", (int)ml + 2, fs->f->d_name);
+				ft_printf("%-*s", (int)ml + 2, fs->f ? fs->f->d_name : fs->name);
+				//ft_putstr(fs->f ? fs->f->d_name : fs->name);
 				if (newcol + ml + 2 > 80)
 				{
 					newcol = 0;
 					ft_putchar('\n');
 				}
 			}
-			fs = fs->prev;
+			if (fl->r)
+				fs = fs->next;
+			else
+				fs = fs->prev;
 		}
 	}
 }
@@ -249,18 +266,19 @@ t_files	*handle_av(t_flags *fl, char **av)
 {
 	t_files *fs;
 	struct stat stbuf;
-	char		*path;
+	//char		*path;
 
 	fs = NULL;
 	while (fl->st < fl->ac)
 	{
 		if (stat(av[fl->st], &stbuf) < 0)
 		{
-			ft_puterr("ls");
-			path = concat_strs(av[fl->st], "str1", "str2", "str3");
-			ft_putstr(path);
+			ft_puterr(concat_strs("ls: ", av[fl->st], ": No such file or directory", NULL));
 		}
-
+		else
+		{
+			add_to_dll(&fs, NULL, av[fl->st]);
+		}
 		fl->st++;
 	}
 	return (fs);
@@ -285,7 +303,8 @@ int		main(int ac, char **av)
 	//print_dll(fs);
 
 	sort_dll(fs);
-	just_l(fs, &fl);
+	just_l(fs, &fl, 1);
+	just_l(fs, &fl, 0);
 	//print_dll(fs);
 	//delete_dll(find_head(fs));
 	//print_dll(fs);
