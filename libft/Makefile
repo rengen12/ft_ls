@@ -35,7 +35,7 @@ SRC = ft_memset.c ft_bzero.c ft_memcpy.c ft_memccpy.c ft_memmove.c \
 	  ft_sortarr_asc.c ft_sortarr_desc.c ft_swap.c \
 	  ft_printhex.c ft_putnbr_base.c ft_convert_base.c ft_atoi_base.c \
 	  ft_div_mod.c ft_srch_arrelem.c ft_arrrev.c ft_arrnew.c ft_putarr.c \
-	  get_next_line.c
+	  get_next_line.c ft_realloc.c ft_puterr.c
 
 OBJ = $(addprefix $(OBJFOLD),$(patsubst %.c, %.o, $(SRC)))
 PRINTFOBJ = ./ft_printf/obj/*.o

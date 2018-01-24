@@ -1,25 +1,18 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_strcpy.c                                        :+:      :+:    :+:   */
+/*   ft_puterr.c                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: amichak <marvin@42.fr>                     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2017/10/26 15:33:51 by amichak           #+#    #+#             */
-/*   Updated: 2017/10/26 15:34:40 by amichak          ###   ########.fr       */
+/*   Created: 2018/01/24 13:59:00 by amichak           #+#    #+#             */
+/*   Updated: 2018/01/24 13:59:00 by amichak          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-char	*ft_strcpy(char *dest, const char *src)
-{
-	int		i;
+#include "../libft.h"
 
-	i = 0;
-	while (src[i])
-	{
-		dest[i] = src[i];
-		i++;
-	}
-	dest[i] = '\0';
-	return (dest);
+void	ft_puterr(char *message)
+{
+	ft_putendl_fd(message, 2);
 }

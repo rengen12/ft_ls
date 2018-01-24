@@ -10,9 +10,9 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "libft.h"
+#include "../libft.h"
 
-char	*ft_realloc(char *str)
+char	*ft_realloc_gnl(char *str)
 {
 	char	*tmp;
 	size_t	n;
@@ -115,7 +115,7 @@ int		get_next_line(const int fd, char **line)
 				return (1);
 			}
 			else if ((++i % (BUFF_SIZE + oldi)) == 0)
-				*line = ft_realloc(*line);
+				*line = ft_realloc_gnl(*line);
 	}
 	ft_strdel((ret == -1) ? line : NULL);
 	return ((i > 0 && ret != -1) ? 1 : ret);

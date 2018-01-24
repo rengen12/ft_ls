@@ -16,6 +16,7 @@
 # include <stdlib.h>
 # include <string.h>
 # include <fcntl.h>
+# include <stdarg.h>
 
 # define BUFF_SIZE 12
 
@@ -102,5 +103,6 @@ int				*ft_arrnew(int len);
 void			ft_putarr(int *arr, int len, char separator);
 int				get_next_line(const int fd, char **line);
 int				ft_printf(const char *format, ...);
-
+void			ft_puterr(char *message);
+char			*ft_realloc(char *str, size_t sz);
 #endif

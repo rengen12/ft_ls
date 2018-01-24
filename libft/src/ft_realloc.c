@@ -1,25 +1,28 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_strcpy.c                                        :+:      :+:    :+:   */
+/*   ft_realloc.c                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: amichak <marvin@42.fr>                     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2017/10/26 15:33:51 by amichak           #+#    #+#             */
-/*   Updated: 2017/10/26 15:34:40 by amichak          ###   ########.fr       */
+/*   Created: 2018/01/24 14:48:00 by amichak           #+#    #+#             */
+/*   Updated: 2018/01/24 14:48:00 by amichak          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-char	*ft_strcpy(char *dest, const char *src)
-{
-	int		i;
+#include "../libft.h"
 
-	i = 0;
-	while (src[i])
-	{
-		dest[i] = src[i];
-		i++;
-	}
-	dest[i] = '\0';
-	return (dest);
+char	*ft_realloc(char *str, size_t sz)
+{
+	char	*tmp;
+	size_t	n;
+
+	if (!str)
+		return (NULL);
+	n = ft_strlen(str);
+	if (!(tmp = ft_strnew(n + sz)))
+		return (NULL);
+	ft_memmove(tmp, str, n);
+	ft_strdel(&str);
+	return (tmp);
 }

@@ -3,7 +3,6 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include "libft/ft_printf/ft_printf.c"
 
 t_files *find_el(t_files *head, char *name)
 {
@@ -92,6 +91,7 @@ t_files	*handle_dir(char *name)
 		perror(strerror(errno));
 		return (NULL);
 	}
+	ft_putnbr(stat("../libft/src", &stbuf));
 	while ((f = readdir(dfd)))
 	{
 		/*if (!ft_strcmp(f->d_name, ".") || !ft_strcmp(f->d_name, ".."))
@@ -222,6 +222,50 @@ void	delete_dll(t_files *fs)
 	}
 }
 
+char 	*concat_strs(char *str, ...)
+{
+	va_list ap;
+	char	*res;
+
+	res = NULL;
+	if (str)
+	{
+		va_start(ap, str);
+		if (!(res = ft_strnew(ft_strlen(str))))
+			return (NULL);
+		ft_strcpy(res, str);
+		while ((str = va_arg(ap, char *)))
+		{
+			res = ft_realloc(res, ft_strlen(str));
+			ft_strcat(res, str);
+		}
+
+		va_end(ap);
+	}
+	return (res);
+}
+
+t_files	*handle_av(t_flags *fl, char **av)
+{
+	t_files *fs;
+	struct stat stbuf;
+	char		*path;
+
+	fs = NULL;
+	while (fl->st < fl->ac)
+	{
+		if (stat(av[fl->st], &stbuf) < 0)
+		{
+			ft_puterr("ls");
+			path = concat_strs(av[fl->st], "str1", "str2", "str3");
+			ft_putstr(path);
+		}
+
+		fl->st++;
+	}
+	return (fs);
+}
+
 int		main(int ac, char **av)
 {
 	t_flags	fl;
@@ -230,7 +274,12 @@ int		main(int ac, char **av)
 	//printf("S_IFDIR %d\n", S_IFDIR);
 	//printf("S_IFMT %d\n", S_IFMT);
 	handle_flags(&fl, ac, av);
-	fs = handle_dir("../libft");
+	if (fl.st)
+	{
+		fs = handle_av(&fl, av);
+	}
+	else
+		fs = handle_dir(".");
 
 	//ft_putendl("origin");
 	//print_dll(fs);
