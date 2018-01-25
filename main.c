@@ -86,6 +86,16 @@ void add_to_dll(t_files **fs, struct dirent *f, char *name)
 	}
 }
 
+void	delete_dll(t_files *fs)
+{
+	if (fs)
+	{
+		if (fs->next)
+			delete_dll(fs->next);
+		free(fs);
+	}
+}
+
 t_files	*handle_dir(char *name)
 {
 	DIR *dfd;
@@ -110,6 +120,17 @@ t_files	*handle_dir(char *name)
 		stat(f->d_name, &stbuf);
 	}
 	closedir(dfd);
+	return (fs);
+}
+
+
+t_files *handle_dir_rec(char *path)
+{
+	t_files *fs;
+
+	fs = handle_dir(path);
+	fs = find_tail() ??????????????
+	delete_dll(find_head(fs));
 	return (fs);
 }
 
@@ -229,16 +250,6 @@ void just_l(t_files *fs, t_flags *fl, int f)
 	}
 }
 
-void	delete_dll(t_files *fs)
-{
-	if (fs)
-	{
-		if (fs->next)
-			delete_dll(fs->next);
-		free(fs);
-	}
-}
-
 char 	*concat_strs(char *str, ...)
 {
 	va_list ap;
@@ -281,6 +292,32 @@ t_files	*handle_av(t_flags *fl, char **av)
 		}
 		fl->st++;
 	}
+	sort_dll(fs);
+	just_l(fs, fl, 1);
+	just_l(fs, fl, 0);
+	if (fl->br)
+	{
+		fs = find_tail(fs);
+		while (fs)
+		{
+			if (stat(fs->name, &stbuf) >= 0)
+				if (S_ISDIR(stbuf.st_mode))
+				{
+					handle_dir_rec(fs->name);
+				}
+			fs = fs->prev;
+		}
+	}
+	delete_dll(find_head(fs));
+	return (fs);
+}
+
+t_files	*handle_ls_without_av(t_flags *fl)
+{
+	t_files *fs;
+
+	fs = handle_dir(".");
+	(void)fl;
 	return (fs);
 }
 
@@ -297,14 +334,17 @@ int		main(int ac, char **av)
 		fs = handle_av(&fl, av);
 	}
 	else
-		fs = handle_dir(".");
+		fs = handle_ls_without_av(&fl);
 
 	//ft_putendl("origin");
 	//print_dll(fs);
 
-	sort_dll(fs);
+	/*sort_dll(fs);
 	just_l(fs, &fl, 1);
 	just_l(fs, &fl, 0);
+	*/
+
+
 	//print_dll(fs);
 	//delete_dll(find_head(fs));
 	//print_dll(fs);
