@@ -3,7 +3,11 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include "libft/src/ft_putstr.c"
+#include <sys/ioctl.h>
+
+void	sort_dll(t_files *fs);
+void just_l(t_files *fs, t_flags *fl, int f);
+char 	*concat_strs(char *str, ...);
 
 t_files *find_el(t_files *head, char *name)
 {
@@ -124,12 +128,25 @@ t_files	*handle_dir(char *name)
 }
 
 
-t_files *handle_dir_rec(char *path)
+t_files *handle_dir_rec(char *path, t_flags *fl)
 {
 	t_files *fs;
 
+	ft_putendl(path);
 	fs = handle_dir(path);
-	fs = find_tail() ??????????????
+	sort_dll(fs);
+	just_l(fs, fl, 1);
+	just_l(fs, fl, 0);
+	fs = find_tail(fs);
+	while (fs)
+	{
+		if (fs->f->d_type == DT_DIR && ft_strcmp(fs->f->d_name, ".") && \
+				ft_strcmp(fs->f->d_name, ".."))
+		{
+			handle_dir_rec(concat_strs(path, fs->f->d_name, NULL), fl);
+		}
+		fs = fs->prev;
+	}
 	delete_dll(find_head(fs));
 	return (fs);
 }
@@ -179,14 +196,17 @@ void	sort_dll(t_files *fs)
 		f = 0;
 		fs = find_head(fs);
 		while (fs->next)
+		{
 			if ((fs->name && ft_strcmp(fs->name, fs->next->name) < 0) || (fs->f && \
-					ft_strcmp(fs->f->d_name, fs->next->f->d_name) < 0))
+                    ft_strcmp(fs->f->d_name, fs->next->f->d_name) < 0))
 			{
 				f = 1;
 				dll_paste_aft(fs, fs->next);
-			}
-			else
+			} else
 				fs = fs->next;
+			print_dll(find_head(fs));
+		}
+		write(1, "11\n", 3);
 	}
 }
 
@@ -303,7 +323,7 @@ t_files	*handle_av(t_flags *fl, char **av)
 			if (stat(fs->name, &stbuf) >= 0)
 				if (S_ISDIR(stbuf.st_mode))
 				{
-					handle_dir_rec(fs->name);
+					handle_dir_rec(fs->name, fl);
 				}
 			fs = fs->prev;
 		}
@@ -317,7 +337,21 @@ t_files	*handle_ls_without_av(t_flags *fl)
 	t_files *fs;
 
 	fs = handle_dir(".");
-	(void)fl;
+
+	sort_dll(fs);
+	just_l(fs, fl, 1);
+	just_l(fs, fl, 0);
+	if (fl->br)
+	{
+		fs = find_tail(fs);
+		while (fs)
+		{
+			if (fs->f->d_type == DT_DIR && ft_strcmp(fs->f->d_name, ".") && \
+					ft_strcmp(fs->f->d_name, ".."))
+				handle_dir_rec(concat_strs("./", fs->f->d_name, NULL), fl);
+			fs = fs->prev;
+		}
+	}
 	return (fs);
 }
 
