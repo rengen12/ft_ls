@@ -6,7 +6,7 @@
 #include <sys/ioctl.h>
 
 void	sort_dll(t_files *fs);
-void just_l(t_files *fs, t_flags *fl, int f);
+void	just_l(t_files *fs, t_flags *fl, int f);
 char 	*concat_strs(char *str, ...);
 
 t_files *find_el(t_files *head, char *name)
@@ -43,7 +43,7 @@ t_files	*find_tail(t_files *el)
 	return (el);
 }
 
-void dll_paste_aft(t_files *fr, t_files *aft)
+/*void dll_paste_aft(t_files *fr, t_files *aft)
 {
 	t_files *prev;
 	t_files	*next;
@@ -70,6 +70,31 @@ void dll_paste_aft(t_files *fr, t_files *aft)
 		}
 		fr->prev = aft;
 	}
+}*/
+
+void dll_paste_aft(t_files *fr, t_files *aft)
+{
+	t_files	*head;
+
+	if (!fr)
+		return ;
+	if (aft)
+	{
+		fr->next = aft->next;
+		aft->prev = fr->prev;
+		if (aft->next)
+			aft->next->prev = fr;
+		if (fr->prev)
+			fr->prev->next = aft;
+		aft->next = fr;
+	}
+	else
+	{
+		head = find_head(fr);
+		fr->next = head;
+		head->prev = fr;
+	}
+	fr->prev = aft;
 }
 
 void add_to_dll(t_files **fs, struct dirent *f, char *name)
@@ -112,16 +137,16 @@ t_files	*handle_dir(char *name)
 	//dir = (struct dirent *)malloc(sizeof(struct dirent));
 	if (!dfd)
 	{
-		perror(strerror(errno));
+		//perror(strerror(errno));
 		return (NULL);
 	}
-	//ft_putnbr(stat("../libft/src", &stbuf));
+	//ft_putnbr(lstat("../libft/src", &stbuf));
 	while ((f = readdir(dfd)))
 	{
 		/*if (!ft_strcmp(f->d_name, ".") || !ft_strcmp(f->d_name, ".."))
 			continue ;*/
 		add_to_dll(&fs, f, NULL);
-		stat(f->d_name, &stbuf);
+		lstat(f->d_name, &stbuf);
 	}
 	closedir(dfd);
 	return (fs);
@@ -132,7 +157,8 @@ t_files *handle_dir_rec(char *path, t_flags *fl)
 {
 	t_files *fs;
 
-	ft_putendl(path);
+	//ft_putendl("");
+	ft_putstr(concat_strs("\n", path, ":\n", NULL));
 	fs = handle_dir(path);
 	sort_dll(fs);
 	just_l(fs, fl, 1);
@@ -143,7 +169,7 @@ t_files *handle_dir_rec(char *path, t_flags *fl)
 		if (fs->f->d_type == DT_DIR && ft_strcmp(fs->f->d_name, ".") && \
 				ft_strcmp(fs->f->d_name, ".."))
 		{
-			handle_dir_rec(concat_strs(path, fs->f->d_name, NULL), fl);
+			handle_dir_rec(concat_strs(path, "/", fs->f->d_name, NULL), fl);
 		}
 		fs = fs->prev;
 	}
@@ -186,6 +212,15 @@ void	print_dll(t_files *head)
 	}
 }
 
+void	print_dll_r(t_files *head)
+{
+	while (head)
+	{
+		ft_putendl(head->f->d_name);
+		head = head->prev;
+	}
+}
+
 void	sort_dll(t_files *fs)
 {
 	int f;
@@ -198,15 +233,16 @@ void	sort_dll(t_files *fs)
 		while (fs->next)
 		{
 			if ((fs->name && ft_strcmp(fs->name, fs->next->name) < 0) || (fs->f && \
-                    ft_strcmp(fs->f->d_name, fs->next->f->d_name) < 0))
+				ft_strcmp(fs->f->d_name, fs->next->f->d_name) < 0))
 			{
 				f = 1;
 				dll_paste_aft(fs, fs->next);
-			} else
+			}
+			else
 				fs = fs->next;
-			print_dll(find_head(fs));
+			//print_dll(find_head(fs));
 		}
-		write(1, "11\n", 3);
+		//write(1, "11\n", 3);
 	}
 }
 
@@ -242,6 +278,8 @@ void just_l(t_files *fs, t_flags *fl, int f)
 {
 	size_t	ml;
 	size_t	newcol;
+	struct ttysize ts;
+	ioctl(0, TIOCGSIZE, &ts);
 
 	if (fs && fl)
 	{
@@ -255,8 +293,7 @@ void just_l(t_files *fs, t_flags *fl, int f)
 			{
 				newcol += ml + 2;
 				ft_printf("%-*s", (int)ml + 2, fs->f ? fs->f->d_name : fs->name);
-				//ft_putstr(fs->f ? fs->f->d_name : fs->name);
-				if (newcol + ml + 2 > 80)
+				if (newcol + ml + 2 > ts.ts_cols)
 				{
 					newcol = 0;
 					ft_putchar('\n');
@@ -302,7 +339,7 @@ t_files	*handle_av(t_flags *fl, char **av)
 	fs = NULL;
 	while (fl->st < fl->ac)
 	{
-		if (stat(av[fl->st], &stbuf) < 0)
+		if (lstat(av[fl->st], &stbuf) < 0)
 		{
 			ft_puterr(concat_strs("ls: ", av[fl->st], ": No such file or directory", NULL));
 		}
@@ -320,7 +357,7 @@ t_files	*handle_av(t_flags *fl, char **av)
 		fs = find_tail(fs);
 		while (fs)
 		{
-			if (stat(fs->name, &stbuf) >= 0)
+			if (lstat(fs->name, &stbuf) >= 0)
 				if (S_ISDIR(stbuf.st_mode))
 				{
 					handle_dir_rec(fs->name, fl);
@@ -338,8 +375,15 @@ t_files	*handle_ls_without_av(t_flags *fl)
 
 	fs = handle_dir(".");
 
+	/*ft_putendl("not_sotred");
+	print_dll(fs);
+	ft_putendl("");*/
 	sort_dll(fs);
-	just_l(fs, fl, 1);
+	/*ft_putendl("sotred");
+	print_dll(find_head(fs));
+	ft_putendl("");
+	ft_putendl("rev");
+	print_dll_r(find_tail(fs));*/
 	just_l(fs, fl, 0);
 	if (fl->br)
 	{
