@@ -15,6 +15,8 @@
 
 # include "libft/libft.h"
 # include <errno.h>
+# include <sys/stat.h>
+# include <sys/types.h>
 
 typedef struct	s_flags
 {
@@ -31,6 +33,7 @@ typedef struct	s_files
 {
 	struct dirent	*f;
 	char 			*name;
+	struct stat		stbuf;
 	struct s_files	*next;
 	struct s_files	*prev;
 }				t_files;
