@@ -105,4 +105,6 @@ int				get_next_line(const int fd, char **line);
 int				ft_printf(const char *format, ...);
 void			ft_puterr(char *message);
 char			*ft_realloc(char *str, size_t sz);
+char			*concat_strs(char *str, ...);
+
 #endif

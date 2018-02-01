@@ -12,13 +12,13 @@
 
 .PHONY:				all clean fclean re $(NAME)
 
-CC = gcc
-CFLAGS = -Wall -Wextra -Werror
-NAME = libft.a
-HEADER = -I ./
-OBJFOLD = src/obj/
-PRINTFFOLD = ./ft_printf
-SRCDIR = ./src/
+CC = 				gcc
+CFLAGS = 			-Wall -Wextra -Werror
+NAME = 				libft.a
+HEADER = 			-I ./
+OBJFOLD = 			src/obj/
+PRINTFFOLD = 		./ft_printf
+SRCDIR = 			./src/
 SRC = ft_memset.c ft_bzero.c ft_memcpy.c ft_memccpy.c ft_memmove.c \
 	  ft_memchr.c ft_memcmp.c ft_strlen.c ft_strdup.c ft_strcpy.c \
 	  ft_strncpy.c ft_strcat.c ft_strncat.c ft_strlcat.c ft_strchr.c \
@@ -35,10 +35,10 @@ SRC = ft_memset.c ft_bzero.c ft_memcpy.c ft_memccpy.c ft_memmove.c \
 	  ft_sortarr_asc.c ft_sortarr_desc.c ft_swap.c \
 	  ft_printhex.c ft_putnbr_base.c ft_convert_base.c ft_atoi_base.c \
 	  ft_div_mod.c ft_srch_arrelem.c ft_arrrev.c ft_arrnew.c ft_putarr.c \
-	  get_next_line.c ft_realloc.c ft_puterr.c
+	  get_next_line.c ft_realloc.c ft_puterr.c concat_strs.c
 
-OBJ = $(addprefix $(OBJFOLD),$(patsubst %.c, %.o, $(SRC)))
-PRINTFOBJ = ./ft_printf/obj/*.o
+OBJ = 				$(addprefix $(OBJFOLD),$(patsubst %.c, %.o, $(SRC)))
+PRINTFOBJ = 		./ft_printf/obj/*.o
 
 all:				$(NAME)
 

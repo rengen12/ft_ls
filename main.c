@@ -349,29 +349,6 @@ void pr(t_files *fs, t_flags *fl, int f)
 	}
 }
 
-char 	*concat_strs(char *str, ...)
-{
-	va_list ap;
-	char	*res;
-
-	res = NULL;
-	if (str)
-	{
-		va_start(ap, str);
-		if (!(res = ft_strnew(ft_strlen(str))))
-			return (NULL);
-		ft_strcpy(res, str);
-		while ((str = va_arg(ap, char *)))
-		{
-			res = ft_realloc(res, ft_strlen(str));
-			ft_strcat(res, str);
-		}
-
-		va_end(ap);
-	}
-	return (res);
-}
-
 void	handle_av_dir(t_flags *fl, char *path)
 {
 	t_files *fs;
@@ -512,8 +489,7 @@ int		main(int ac, char **av)
 	//print_dll(fs);
 	/*sort_dll(fs);
 	pr(fs, &fl, 1);
-	pr(fs, &fl, 0);
-	*/
+	pr(fs, &fl, 0);*/
 
 
 	//print_dll(fs);

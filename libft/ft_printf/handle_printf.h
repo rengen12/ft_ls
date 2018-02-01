@@ -12,10 +12,7 @@
 
 #ifndef HANDLE_PRINTF_H
 # define HANDLE_PRINTF_H
-# include <unistd.h>
-# include <stdlib.h>
-# include <string.h>
-# include <stdarg.h>
+# include "../libft.h"
 # include <limits.h>
 # include <inttypes.h>
 

@@ -12,15 +12,15 @@
 
 .PHONY:		all clean fclean re $(NAME)
 
-CFLAGS = -Wall -Wextra -Werror
-SRC = main.c
-NAME = ft_ls
-OBJFOLD = obj
-LIBFT = ./libft/
-LIB = -L. libft/libft.a
-HEADER = -I ./
+CFLAGS =	-Wall -Wextra -Werror
+SRC =		main.c
+NAME =		ft_ls
+OBJFOLD =	obj/
+LIBFT =		./libft/
+LIB =		-L. libft/libft.a
+HEADER =	-I ./
 
-OBJ = $(addprefix $(OBJFOLD),$(patsubst %.c, %.o, $(SRC)))
+OBJ =		$(addprefix $(OBJFOLD),$(patsubst %.c, %.o, $(SRC)))
 
 all:		$(NAME)
 
