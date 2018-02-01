@@ -38,4 +38,6 @@ typedef struct	s_files
 	struct s_files	*prev;
 }				t_files;
 
+void			handle_flags(t_flags *fl, int ac, char **av);
+
 #endif

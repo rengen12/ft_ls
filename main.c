@@ -168,31 +168,7 @@ t_files *handle_dir_rec(char *path, t_flags *fl)
 	return (fs);
 }
 
-void	handle_flags(t_flags *fl, int ac, char **av)
-{
-	int i;
 
-	i = 0;
-	fl->a = 0;
-	fl->br = 0;
-	fl->l = 0;
-	fl->r = 0;
-	fl->t = 0;
-	fl->ac = ac;
-	while (++i < ac && av[i][0] == '-')
-		while (*++av[i])
-				if (*av[i] == 'a')
-					fl->a = 1;
-				else if (*av[i] == 'R')
-					fl->br = 1;
-				else if (*av[i] == 'l')
-					fl->l = 1;
-				else if (*av[i] == 'r')
-					fl->r = 1;
-				else if (*av[i] == 't')
-					fl->t = 1;
-	fl->st = (i < ac) ? i : 0;
-}
 
 void	print_dll(t_files *head)
 {
@@ -285,28 +261,68 @@ size_t	count_col_width(t_files **fs)
 	return (ml);
 }
 
-int 	find_size(t_files *fs)
+int 	find_total(t_files *fs, t_flags fl)
 {
-	int 	res;
+	ssize_t	res;
 
 	res = 0;
-	(void)fs;
-	return (res);
+	while (fs)
+	{
+		if ((fs->f && fs->f->d_name[0] == '.' && fl.a) || (fs->f && fs->f->d_name[0] != '.'))) || \
+                    (f && !S_ISDIR(fs->stbuf.st_mode)))
+		{
+		res += fs->stbuf.st_blocks;
+		fs = fs->prev;
+	}
+	return ((int)res);
 }
 
-void pr_l(t_files *fs, t_flags *fl, int f)
+void	pr_l_one_line(t_files *f)
+{
+	if (S_ISLNK(f->stbuf.st_mode))
+		ft_putchar('l');
+	else if (S_ISDIR(f->stbuf.st_mode))
+		ft_putchar('d');
+	else
+		ft_putchar('-');
+	ft_putchar((f->stbuf.st_mode & S_IRUSR) ? 'r' : '-');
+	ft_putchar((f->stbuf.st_mode & S_IWUSR) ? 'w' : '-');
+	ft_putchar((f->stbuf.st_mode & S_IXUSR) ? 'x' : '-');
+	ft_putchar((f->stbuf.st_mode & S_IRGRP) ? 'r' : '-');
+	ft_putchar((f->stbuf.st_mode & S_IWGRP) ? 'w' : '-');
+	ft_putchar((f->stbuf.st_mode & S_IXGRP) ? 'x' : '-');
+	ft_putchar((f->stbuf.st_mode & S_IROTH) ? 'r' : '-');
+	ft_putchar((f->stbuf.st_mode & S_IWOTH) ? 'w' : '-');
+	ft_putchar((f->stbuf.st_mode & S_IXOTH) ? 'x' : '-');
+
+	ft_putchar('\n');
+}
+
+void	pr_l(t_files *fs, t_flags *fl, int f)
 {
 	int 	sz;
 
 	(void)f;
-	sz = find_size(fs);
+	fs = find_tail(fs);
+	sz = find_total(fs);
 	if (!sz && !fl->a)
 		return ;
+	if (fl->r)
+		fs = find_head(fs);
 	ft_printf("total: %d\n", sz);
-
+	while (fs)
+	{
+		if ((!f && ((fs->f && fs->f->d_name[0] == '.' && fl->a) || (fs->f && fs->f->d_name[0] != '.'))) || \
+                    (f && !S_ISDIR(fs->stbuf.st_mode)))
+			pr_l_one_line(fs);
+		if (fl->r)
+			fs = fs->next;
+		else
+			fs = fs->prev;
+	}
 }
 
-void pr(t_files *fs, t_flags *fl, int f)
+void	pr(t_files *fs, t_flags *fl, int f)
 {
 	size_t			ml;
 	size_t			newcol;
@@ -396,9 +412,10 @@ void	pr_stbuf(t_files *head)
 	}
 }
 
-t_files	*handle_av(t_flags *fl, char **av)
+void	handle_av(t_flags *fl, char **av)
 {
 	t_files *fs;
+	t_files *fs2;
 	struct stat stbuf;
 	//char		*path;
 	int 		pr_pth;
@@ -421,10 +438,9 @@ t_files	*handle_av(t_flags *fl, char **av)
 	if (fl->t)
 		sort_dll_t(fs);
 	pr(fs, fl, 1);
-	//ft_putendl("");
-	//pr(fs, fl, 0);
 	fs = find_tail(fs);
 	pr_pth = find_2_dir(fs);
+	fs2 = fs;
 	while (fs)
 	{
 		if (S_ISDIR(fs->stbuf.st_mode))
@@ -435,29 +451,21 @@ t_files	*handle_av(t_flags *fl, char **av)
 		}
 		fs = fs->prev;
 	}
-	delete_dll(find_head(fs));
-	return (fs);
+	delete_dll(find_head(fs2));
 }
 
 
-t_files	*handle_ls_without_av(t_flags *fl)
+void	handle_ls_without_av(t_flags *fl)
 {
 	t_files *fs;
+	t_files	*fs2;
 
 	fs = handle_dir(".");
-
-	/*ft_putendl("not_sotred");
-	print_dll(fs);
-	ft_putendl("");*/
 	sort_dll(fs);
 	if (fl->t)
 		sort_dll_t(fs);
-	/*ft_putendl("sotred");
-	print_dll(find_head(fs));
-	ft_putendl("");
-	ft_putendl("rev");
-	print_dll_r(find_tail(fs));*/
 	pr(fs, fl, 0);
+	fs2 = fs;
 	if (fl->br)
 	{
 		fs = find_tail(fs);
@@ -469,21 +477,18 @@ t_files	*handle_ls_without_av(t_flags *fl)
 			fs = fs->prev;
 		}
 	}
-	return (fs);
+	delete_dll(find_head(fs2));
 }
 
 int		main(int ac, char **av)
 {
 	t_flags	fl;
-	t_files *fs;
 
 	handle_flags(&fl, ac, av);
 	if (fl.st)
-	{
-		fs = handle_av(&fl, av);
-	}
+		handle_av(&fl, av);
 	else
-		fs = handle_ls_without_av(&fl);
+		handle_ls_without_av(&fl);
 
 	//ft_putendl("origin");
 	//print_dll(fs);
