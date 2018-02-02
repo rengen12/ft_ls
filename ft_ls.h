@@ -17,6 +17,11 @@
 # include <errno.h>
 # include <sys/stat.h>
 # include <sys/types.h>
+# include <time.h>
+# include <dirent.h>
+# include <sys/ioctl.h>
+# include <pwd.h>
+# include <grp.h>
 
 typedef struct	s_flags
 {
@@ -33,7 +38,7 @@ typedef struct	s_files
 {
 	struct dirent	*f;
 	char 			*name;
-	struct stat		stbuf;
+	struct stat		st;
 	struct s_files	*next;
 	struct s_files	*prev;
 }				t_files;

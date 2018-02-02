@@ -21,7 +21,7 @@ size_t	ft_putstr_pf(char const *s, t_fs *fs)
 	i = ft_strlen_printf(s);
 	if (fs)
 		if (fs->prec_exist && (size_t)fs->prec < i && fs->ch == 's')
-			i = fs->prec;
+			i = (size_t)fs->prec;
 	write(1, s, i);
 	return (i);
 }
