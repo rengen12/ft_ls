@@ -23,7 +23,7 @@ static void	pr_usage(char c)
 
 void		handle_flags(t_flags *fl, int ac, char **av)
 {
-	int i;
+	int	i;
 
 	i = 0;
 	*fl = (t_flags){0, 0, 0, 0, 0, 0, 0};

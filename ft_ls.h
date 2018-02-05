@@ -22,6 +22,7 @@
 # include <sys/ioctl.h>
 # include <pwd.h>
 # include <grp.h>
+#include <sys/xattr.h>
 
 typedef struct	s_flags
 {
@@ -42,6 +43,14 @@ typedef struct	s_files
 	struct s_files	*next;
 	struct s_files	*prev;
 }				t_files;
+
+typedef struct	s_len_ls_l
+{
+	short int 		l_lmax;
+	short int 		usr_lmax;
+	short int		gr_lmax;
+	short int		sz_lmax;
+}				t_len_ls_l;
 
 void			handle_flags(t_flags *fl, int ac, char **av);
 
