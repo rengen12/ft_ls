@@ -167,7 +167,7 @@ t_files *handle_dir_rec(char *path, t_flags fl)
 				ft_strcmp(fs->f->d_name, ".."))
 		{
 			if (fs->f && ((fs->f->d_name[0] == '.' && fl.a) || fs->f->d_name[0] != '.'))
-				handle_dir_rec(concat_strs(path[ft_strlen(path) - 1] == '/' ? "" : "/", fs->f->d_name, NULL), fl);
+				handle_dir_rec(concat_strs(fs->f->d_name, NULL), fl);
 		}
 		fs = fs->prev;
 	}
@@ -546,11 +546,6 @@ int		main(int ac, char **av)
 	/*sort_dll(fs);
 	pr(fs, &fl, 1);
 	pr(fs, &fl, 0);*/
-	DIR *dfd;
-	struct dirent *f;
-	int res;
-	struct stat st;
-	t_files *fs;
 
 
 	/*ft_putnbr(errno);
