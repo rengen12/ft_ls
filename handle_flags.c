@@ -26,7 +26,7 @@ void		handle_flags(t_flags *fl, int ac, char **av)
 	int	i;
 
 	i = 0;
-	*fl = (t_flags){0, 0, 0, 0, 0, 0, 0};
+	*fl = (t_flags){0, 0, 0, 0, 0, 0, 0, 0};
 	fl->ac = ac;
 	while (++i < ac && av[i][0] == '-')
 		while (*++av[i])
@@ -35,11 +35,19 @@ void		handle_flags(t_flags *fl, int ac, char **av)
 			else if (*av[i] == 'R')
 				fl->br = 1;
 			else if (*av[i] == 'l')
+			{
 				fl->l = 1;
+				fl->o = 0;
+			}
 			else if (*av[i] == 'r')
 				fl->r = 1;
 			else if (*av[i] == 't')
 				fl->t = 1;
+			else if (*av[i] == '1')
+			{
+				fl->o = 1;
+				fl->l = 0;
+			}
 			else
 				pr_usage(*av[i]);
 	fl->st = (i < ac) ? i : 0;

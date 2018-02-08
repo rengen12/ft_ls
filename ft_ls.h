@@ -27,6 +27,7 @@
 typedef struct	s_flags
 {
 	int 	l;
+	int 	o;
 	int 	br;
 	int 	a;
 	int 	r;
@@ -39,6 +40,7 @@ typedef struct	s_files
 {
 	struct dirent	*f;
 	char 			*name;
+	char 			*path;
 	struct stat		st;
 	struct s_files	*next;
 	struct s_files	*prev;

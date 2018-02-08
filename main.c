@@ -105,6 +105,7 @@ void add_to_dll(t_files **fs, struct dirent *f, char *name)
 		tmp->name = name;
 		tmp->next = *fs;
 		tmp->prev = NULL;
+		tmp->path = NULL;
 		if (*fs)
 			(*fs)->prev = tmp;
 		*fs = tmp;
@@ -137,11 +138,13 @@ t_files	*handle_dir(char *name)
 		add_to_dll(&fs, f, ft_strdup(f->d_name));
 		if ((res = lstat(concat_strs(name, "/", f->d_name, NULL), &st)) >= 0)
 			fs->st = st;
+		if (ft_strcmp(name, "./"))
+			fs->path = concat_strs(name, "/", f->d_name, "/", NULL);
 
 		if (errno > 0)
 		{
 			//perror(concat_strs(name, "/", f->d_name, NULL));
-			errno = 0;
+			//errno = 0;
 		}
 	}
 
@@ -156,22 +159,27 @@ t_files *handle_dir_rec(char *path, t_flags fl)
 	t_files *fs;
 	t_files *fs2;
 
-	ft_putstr(concat_strs("\n", ft_strncmp("./", path, 2) ? "./" : "", path, ":\n", NULL));
+	//if ()
+	ft_putstr(concat_strs("\n", path, ":\n", NULL));
 	fs = handle_dir(path);
-	fs = find_tail(fs);
-	pr(fs, fl, 0);
-	fs2 = fs;
-	while (fs)
+	if (fs)
 	{
-		if (fs->f->d_type == DT_DIR && ft_strcmp(fs->f->d_name, ".") && \
-				ft_strcmp(fs->f->d_name, ".."))
+		fs = find_tail(fs);
+		pr(fs, fl, 0);
+		fs2 = fs;
+		while (fs)
 		{
-			if (fs->f && ((fs->f->d_name[0] == '.' && fl.a) || fs->f->d_name[0] != '.'))
-				handle_dir_rec(concat_strs(fs->f->d_name, NULL), fl);
+			if (fs->f->d_type == DT_DIR && ft_strcmp(fs->name, ".") && \
+                    ft_strcmp(fs->name, ".."))
+			{
+				if (fs->f &&
+					((fs->name[0] == '.' && fl.a) || fs->name[0] != '.'))
+					handle_dir_rec(concat_strs(path, "/", fs->name, NULL), fl);
+			}
+			fs = fs->prev;
 		}
-		fs = fs->prev;
+		delete_dll(find_head(fs2));
 	}
-	delete_dll(find_head(fs2));
 	return (fs);
 }
 
@@ -206,6 +214,28 @@ void	sort_dll(t_files *fs)
 		fs = find_head(fs);
 		while (fs->next)
 		{
+			if (ft_strcmp(fs->name, fs->next->name) < 0)
+			{
+				f = 1;
+				dll_paste_aft(fs, fs->next);
+			}
+			else
+				fs = fs->next;
+		}
+	}
+}
+/* OLD VERSION
+void	sort_dll(t_files *fs)
+{
+	int f;
+
+	f = 1;
+	while (f && fs)
+	{
+		f = 0;
+		fs = find_head(fs);
+		while (fs->next)
+		{
 			if ((fs->name && ft_strcmp(fs->name, fs->next->name) < 0) || (fs->f && \
 				ft_strcmp(fs->f->d_name, fs->next->f->d_name) < 0))
 			{
@@ -216,7 +246,7 @@ void	sort_dll(t_files *fs)
 				fs = fs->next;
 		}
 	}
-}
+}*/
 
 void	sort_dll_t(t_files *fs)
 {
@@ -247,23 +277,23 @@ size_t	count_col_width(t_files **fs)
 	ml = 0;
 	if (fs)
 	{
-		ml = ft_strlen((*fs)->f ? (*fs)->f->d_name : (*fs)->name);
+		ml = ft_strlen((*fs)->name);
 		while ((*fs)->prev)
 		{
-			if (ft_strlen((*fs)->f ? (*fs)->prev->f->d_name : (*fs)->name) > ml)
-				ml = ft_strlen((*fs)->f ? (*fs)->prev->f->d_name : (*fs)->name);
+			if (ft_strlen((*fs)->name) > ml)
+				ml = ft_strlen((*fs)->name);
 			*fs = (*fs)->prev;
 		}
-		if (ft_strlen((*fs)->f ? (*fs)->f->d_name : (*fs)->name) > ml)
-			ml = ft_strlen((*fs)->f ? (*fs)->f->d_name : (*fs)->name);
+		if (ft_strlen((*fs)->name) > ml)
+			ml = ft_strlen((*fs)->name);
 		while ((*fs)->next)
 		{
-			if (ft_strlen((*fs)->f ? (*fs)->next->f->d_name : (*fs)->name) > ml)
-				ml = ft_strlen((*fs)->f ? (*fs)->next->f->d_name : (*fs)->name);
+			if (ft_strlen((*fs)->name) > ml)
+				ml = ft_strlen((*fs)->name);
 			*fs = (*fs)->next;
 		}
-		if (ft_strlen((*fs)->f ? (*fs)->f->d_name : (*fs)->name) > ml)
-			ml = ft_strlen((*fs)->f ? (*fs)->f->d_name : (*fs)->name);
+		if (ft_strlen((*fs)->name) > ml)
+			ml = ft_strlen((*fs)->name);
 	}
 	return (ml);
 }
@@ -300,7 +330,7 @@ int 	find_total(t_files *f, t_flags fl, t_len_ls_l *l)
 		if ((temp = (int)ft_strlen(get_usr(f->st.st_uid))) > l->l_lmax)
 			l->usr_lmax = (short)temp;
 
-		if (f->f && ((f->f->d_name[0] == '.' && fl.a) || f->f->d_name[0] != '.'))
+		if (f->f && ((f->name[0] == '.' && fl.a) || f->name[0] != '.'))
 			res += f->st.st_blocks;
 		f = f->prev;
 	}
@@ -325,8 +355,15 @@ void	pr_l_one_line(t_files *f, t_len_ls_l l)
 {
 	char	*date;
 	int 	len;
+	char 	*link_cont;
 
-	ft_putchar(S_ISLNK(f->st.st_mode) ? 'l' : '\0');
+	link_cont = NULL;
+	if (S_ISLNK(f->st.st_mode))
+	{
+		ft_putchar('l');
+		link_cont = ft_strnew(1024);
+		readlink(concat_strs(f->path ? f->path : "", f->name, NULL), link_cont, sizeof(link_cont));
+	}
 	ft_putchar(S_ISDIR(f->st.st_mode) ? 'd' : '\0');
 	ft_putchar(S_ISFIFO(f->st.st_mode) ? 'p' : '\0');
 	ft_putchar(S_ISCHR(f->st.st_mode) ? 'c' : '\0');
@@ -334,12 +371,16 @@ void	pr_l_one_line(t_files *f, t_len_ls_l l)
 	ft_putchar(S_ISREG(f->st.st_mode) ? '-' : '\0');
 	ft_putchar(S_ISSOCK(f->st.st_mode) ? 's' : '\0');
 	date = get_date(&f->st.st_mtimespec.tv_sec, &len);
-	ft_printf("%s%s %*d %.*s  %.*s  %*d %.*s %s\n", concat_strs((f->st.st_mode & S_IRUSR) ? "r" : "-", \
+	ft_printf("%s%s %*d %.*s  %.*s  %*d %.*s %s%s\n", concat_strs((f->st.st_mode & S_IRUSR) ? "r" : "-", \
 	(f->st.st_mode & S_IWUSR) ? "w" : "-", (f->st.st_mode & S_IXUSR) ? "x" : "-", \
 	(f->st.st_mode & S_IRGRP) ? "r" : "-", (f->st.st_mode & S_IWGRP) ? "w" : "-", \
 	(f->st.st_mode & S_IXGRP) ? "x" : "-", (f->st.st_mode & S_IROTH) ? "r" : "-", \
 	(f->st.st_mode & S_IWOTH) ? "w" : "-", (f->st.st_mode & S_IXOTH) ? "x" : "-", NULL), \
-	(attr(f) > 0 ? "@" : " "), l.l_lmax, f->st.st_nlink, l.usr_lmax, get_usr(f->st.st_uid), l.gr_lmax, get_group(f->st.st_gid), l.sz_lmax, f->st.st_size, len, date, f->name);
+	(attr(f) > 0 ? "@" : " "), l.l_lmax, f->st.st_nlink, l.usr_lmax, get_usr(f->st.st_uid), \
+	l.gr_lmax, get_group(f->st.st_gid), l.sz_lmax, f->st.st_size, len, date, f->name, \
+	S_ISLNK(f->st.st_mode) ? concat_strs(" -> ", link_cont, NULL) : "");
+	if (S_ISLNK(f->st.st_mode))
+		free(link_cont);
 }
 
 void	pr_l(t_files *fs, t_flags fl, int f)
@@ -362,7 +403,7 @@ void	pr_l(t_files *fs, t_flags fl, int f)
 	ft_printf("total %d\n", sz);
 	while (fs)
 	{
-		if (fs->f && ((fs->f->d_name[0] == '.' && fl.a) || fs->f->d_name[0] != '.'))
+		if (fs->f && ((fs->name[0] == '.' && fl.a) || fs->name[0] != '.'))
 			pr_l_one_line(fs, len);
 		if (fl.r)
 			fs = fs->next;
@@ -392,12 +433,12 @@ void	pr(t_files *fs, t_flags fl, int f)
 				fs = find_tail(fs);
 			while (fs)
 			{
-				if ((!f && ((fs->f && fs->f->d_name[0] == '.' && fl.a) || (fs->f && fs->f->d_name[0] != '.'))) || \
+				if ((!f && ((fs->f && fs->name[0] == '.' && fl.a) || (fs->f && fs->name[0] != '.'))) || \
                     (f && !S_ISDIR(fs->st.st_mode)))
 				{
 					newcol += ml + 2;
-					ft_printf("%-*s", (int) ml + 2, fs->f ? fs->f->d_name : fs->name);
-					if (newcol + ml + 2 > ts.ts_cols)
+					ft_printf("%-*s", (int) ml + 2, fs->name);
+					if (newcol + ml + 2 > ts.ts_cols || fl.o)
 					{
 						newcol = 0;
 						ft_putchar('\n');
@@ -418,17 +459,24 @@ void	handle_av_dir(t_flags fl, char *path)
 {
 	t_files *fs;
 
-	fs = handle_dir(path);
+	if (!(fs = handle_dir(path)))
+	{
+		perror(concat_strs("ls: ", path, NULL));
+		return ;
+	}
 	pr(fs, fl, 0);
 	if (fl.br)
 	{
 		fs = find_tail(fs);
 		while (fs)
 		{
-			if (S_ISDIR(fs->st.st_mode))
+			if (S_ISDIR(fs->st.st_mode) && ft_strcmp(fs->name, ".") && \
+				ft_strcmp(fs->name, ".."))
 			{
-				handle_dir_rec(concat_strs(ft_strncmp(path, "./", 2) ? path : "", path[ft_strlen(path) - 1] == '/' ? "" : "/", \
-										   ft_strcmp(fs->name, "./") ? fs->name : "", NULL), fl);
+				if (fs->f && ((fs->name[0] == '.' && fl.a) || fs->name[0] != '.'))
+					handle_dir_rec(concat_strs(path, path[ft_strlen(path) - 1] == '/' ? "" : "/", fs->name, NULL), fl);
+				/*handle_dir_rec(concat_strs(ft_strncmp(path, "./", 2) ? "./" : "", path[ft_strlen(path) - 1] == '/' ? "" : "/", \
+										   ft_strncmp(fs->name, "./", 2) ? fs->name : "", NULL), fl);*/
 			}
 			fs = fs->prev;
 		}
@@ -533,7 +581,6 @@ void	handle_ls_without_av(t_flags fl)
 int		main(int ac, char **av)
 {
 	t_flags	fl;
-	setlocale(LC_ALL, NULL);
 
 	handle_flags(&fl, ac, av);
 	if (fl.st)
@@ -574,6 +621,13 @@ int		main(int ac, char **av)
 	//fs = find_head(fs);
 	//ft_putendl("\nswapped");
 	//print_dll(fs);
+
+	//ft_putnbr(errno);
+	//ft_putstr("");
+	//ft_putnbr(ENOENT);
+
+	if (errno == ENOENT || errno == EACCES)
+		return (1);
 	return (0);
 }
 
