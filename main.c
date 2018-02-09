@@ -11,97 +11,16 @@
 /* ************************************************************************** */
 
 #include <stdio.h>
-#include <locale.h>
 #include "ft_ls.h"
 
-void	sort_dll(t_files *fs);
-void	pr(t_files *fs, t_flags fl, int f);
-char 	*concat_strs(char *str, ...);
-void	pr_st(t_files *head);
-
-t_files *find_el(t_files *head, char *name)
-{
-	while (head)
-	{
-		if (!ft_strcmp(head->f->d_name, name))
-			return (head);
-		head = head->next;
-	}
-	return (NULL);
-}
-
-int		numlen(ssize_t var)
-{
-	int	i;
-
-	i = 0;
-	while (var)
-	{
-		var /= 10;
-		i++;
-	}
-	if (!i)
-		i = 1;
-	return (i);
-}
-
-int 	is_head(t_files *fr)
-{
-	if (!fr->prev)
-		return (1);
-	return (0);
-}
-
-t_files	*find_head(t_files *el)
-{
-	if (el)
-		while (el->prev)
-			el = el->prev;
-	return (el);
-}
-
-t_files	*find_tail(t_files *el)
-{
-	if (el)
-		while (el->next)
-			el = el->next;
-	return (el);
-}
-
-void dll_paste_aft(t_files *fr, t_files *aft)
-{
-	t_files	*head;
-
-	if (!fr)
-		return ;
-	if (aft)
-	{
-		fr->next = aft->next;
-		aft->prev = fr->prev;
-		if (aft->next)
-			aft->next->prev = fr;
-		if (fr->prev)
-			fr->prev->next = aft;
-		aft->next = fr;
-	}
-	else
-	{
-		head = find_head(fr);
-		fr->next = head;
-		head->prev = fr;
-	}
-	fr->prev = aft;
-}
-
-void add_to_dll(t_files **fs, struct dirent *f, char *name)
+void add_to_dll(t_files **fs, char *name)
 {
 	t_files	*tmp;
 
-	if (fs && (f || name))
+	if (fs && name)
 	{
 		if (!(tmp = (t_files *)malloc(sizeof(t_files))))
 			return ;
-		tmp->f = f;
 		tmp->name = name;
 		tmp->next = *fs;
 		tmp->prev = NULL;
@@ -116,10 +35,27 @@ void	delete_dll(t_files *fs)
 {
 	if (fs)
 	{
+		if (fs->name)
+			free(fs->name);
+		if (fs->path)
+			free(fs->path);
 		if (fs->next)
 			delete_dll(fs->next);
 		free(fs);
 	}
+}
+
+void	st_cpy(t_files *fs, struct stat st)
+{
+	fs->st_mode = st.st_mode;
+	fs->st_nlink = st.st_nlink;
+	fs->st_uid = st.st_uid;
+	fs->st_gid = st.st_gid;
+	fs->mtime = st.st_mtimespec.tv_sec;
+	fs->st_size = st.st_size;
+	fs->blk = st.st_blocks;
+	fs->st_dev = st.st_dev;
+	fs->st_rdev = st.st_rdev;
 }
 
 t_files	*handle_dir(char *name)
@@ -128,26 +64,30 @@ t_files	*handle_dir(char *name)
 	struct dirent *f;
 	struct stat st;
 	t_files *fs;
-	int res;
+	char	*temp; /*NU*/
 
 	fs = NULL;
+	temp = NULL;
 	if (!(dfd = opendir(name)))
 		return (NULL);
 	while ((f = readdir(dfd)))
 	{
-		add_to_dll(&fs, f, ft_strdup(f->d_name));
-		if ((res = lstat(concat_strs(name, "/", f->d_name, NULL), &st)) >= 0)
-			fs->st = st;
+		add_to_dll(&fs, ft_strdup(f->d_name));
+		if (lstat(temp = concat_strs(name, name[ft_strlen(name) - 1] == '/' ? "" : "/", f->d_name, NULL), &st) >= 0)
+		{
+			st_cpy(fs, st);
+			free(temp);
+		}
 		if (ft_strcmp(name, "./"))
-			fs->path = concat_strs(name, "/", f->d_name, "/", NULL);
-
+			fs->path = concat_strs(name,
+								   name[ft_strlen(name) - 1] == '/' ? "" : "/",
+								   f->d_name, "/", NULL);
 		if (errno > 0)
 		{
 			//perror(concat_strs(name, "/", f->d_name, NULL));
 			//errno = 0;
 		}
 	}
-
 	closedir(dfd);
 	sort_dll(fs);
 	return (fs);
@@ -159,8 +99,9 @@ t_files *handle_dir_rec(char *path, t_flags fl)
 	t_files *fs;
 	t_files *fs2;
 
-	//if ()
-	ft_putstr(concat_strs("\n", path, ":\n", NULL));
+	ft_putchar('\n');
+	ft_putstr(path);
+	ft_putchar('\n');
 	fs = handle_dir(path);
 	if (fs)
 	{
@@ -169,133 +110,49 @@ t_files *handle_dir_rec(char *path, t_flags fl)
 		fs2 = fs;
 		while (fs)
 		{
-			if (fs->f->d_type == DT_DIR && ft_strcmp(fs->name, ".") && \
+			if (S_ISDIR(fs->st_mode) && ft_strcmp(fs->name, ".") && \
                     ft_strcmp(fs->name, ".."))
 			{
-				if (fs->f &&
-					((fs->name[0] == '.' && fl.a) || fs->name[0] != '.'))
+				if ((fs->name[0] == '.' && fl.a) || fs->name[0] != '.')
 					handle_dir_rec(concat_strs(path, "/", fs->name, NULL), fl);
 			}
 			fs = fs->prev;
 		}
 		delete_dll(find_head(fs2));
 	}
+	free(path);
 	return (fs);
 }
 
-
-
-void	print_dll(t_files *head)
-{
-	while (head)
-	{
-		ft_putendl(head->f->d_name);
-		head = head->next;
-	}
-}
-
-void	print_dll_r(t_files *head)
-{
-	while (head)
-	{
-		ft_putendl(head->f->d_name);
-		head = head->prev;
-	}
-}
-
-void	sort_dll(t_files *fs)
-{
-	int f;
-
-	f = 1;
-	while (f && fs)
-	{
-		f = 0;
-		fs = find_head(fs);
-		while (fs->next)
-		{
-			if (ft_strcmp(fs->name, fs->next->name) < 0)
-			{
-				f = 1;
-				dll_paste_aft(fs, fs->next);
-			}
-			else
-				fs = fs->next;
-		}
-	}
-}
-/* OLD VERSION
-void	sort_dll(t_files *fs)
-{
-	int f;
-
-	f = 1;
-	while (f && fs)
-	{
-		f = 0;
-		fs = find_head(fs);
-		while (fs->next)
-		{
-			if ((fs->name && ft_strcmp(fs->name, fs->next->name) < 0) || (fs->f && \
-				ft_strcmp(fs->f->d_name, fs->next->f->d_name) < 0))
-			{
-				f = 1;
-				dll_paste_aft(fs, fs->next);
-			}
-			else
-				fs = fs->next;
-		}
-	}
-}*/
-
-void	sort_dll_t(t_files *fs)
-{
-	int 	f;
-
-	f = 1;
-	while (f && fs)
-	{
-		f = 0;
-		fs = find_head(fs);
-		while (fs->next)
-		{
-			if (fs->st.st_mtimespec.tv_sec > fs->next->st.st_mtimespec.tv_sec)
-			{
-				f = 1;
-				dll_paste_aft(fs, fs->next);
-			}
-			else
-				fs = fs->next;
-		}
-	}
-}
-
-size_t	count_col_width(t_files **fs)
+int		count_col_width(t_files **fs, t_flags fl)
 {
 	size_t	ml;
+	size_t	res;
 
 	ml = 0;
+	if (fl.o)
+		return (-2);
 	if (fs)
 	{
 		ml = ft_strlen((*fs)->name);
 		while ((*fs)->prev)
 		{
-			if (ft_strlen((*fs)->name) > ml)
-				ml = ft_strlen((*fs)->name);
+			if ((res = ft_strlen((*fs)->name)) > ml)
+				ml = res;
 			*fs = (*fs)->prev;
 		}
-		if (ft_strlen((*fs)->name) > ml)
-			ml = ft_strlen((*fs)->name);
+		if ((res = ft_strlen((*fs)->name)) > ml)
+			ml = res;
 		while ((*fs)->next)
 		{
-			if (ft_strlen((*fs)->name) > ml)
-				ml = ft_strlen((*fs)->name);
+			if ((res = ft_strlen((*fs)->name)) > ml)
+				ml = res;
 			*fs = (*fs)->next;
 		}
-		if (ft_strlen((*fs)->name) > ml)
-			ml = ft_strlen((*fs)->name);
+		if ((res = ft_strlen((*fs)->name)) > ml)
+			ml = res;
 	}
-	return (ml);
+	return ((int)ml);
 }
 
 char	*get_usr(uid_t uid)
@@ -321,17 +178,21 @@ int 	find_total(t_files *f, t_flags fl, t_len_ls_l *l)
 	res = 0;
 	while (f)
 	{
-		if ((temp = numlen(f->st.st_nlink)) > l->l_lmax)
+		if ((temp = numlen(f->st_nlink)) > l->l_lmax)
 			l->l_lmax = (short)temp;
-		if ((temp = numlen(f->st.st_size)) > l->sz_lmax)
+		if ((temp = numlen(f->st_size)) > l->sz_lmax)
 			l->sz_lmax = (short)temp;
-		if ((temp = (int)ft_strlen(get_group(f->st.st_gid))) > l->gr_lmax)
+		if ((temp = (int)ft_strlen(get_group(f->st_gid))) > l->gr_lmax)
 			l->gr_lmax = (short)temp;
-		if ((temp = (int)ft_strlen(get_usr(f->st.st_uid))) > l->l_lmax)
+		if ((temp = (int)ft_strlen(get_usr(f->st_uid))) > l->l_lmax)
 			l->usr_lmax = (short)temp;
-
-		if (f->f && ((f->name[0] == '.' && fl.a) || f->name[0] != '.'))
-			res += f->st.st_blocks;
+		if (S_ISCHR(f->st_mode) || S_ISBLK(f->st_mode))
+		{
+			l->maj = numlen(major(f->st_rdev)) > l->maj ? numlen(major(f->st_rdev)) : l->maj;
+			l->min = numlen(minor(f->st_rdev)) > l->min ? numlen(minor(f->st_rdev)) : l->min;
+		}
+		if ((f->name[0] == '.' && fl.a) || f->name[0] != '.')
+			res += f->blk;
 		f = f->prev;
 	}
 	return ((int)res);
@@ -351,6 +212,11 @@ char	*get_date(long *val, int *len)
 	return (str + 4);
 }
 
+void	print_maj_min(t_files *f, t_len_ls_l l)
+{
+	ft_printf("%*d, %*d", l.maj, major(f->st_rdev), l.min, minor(f->st_rdev));
+}
+
 void	pr_l_one_line(t_files *f, t_len_ls_l l)
 {
 	char	*date;
@@ -358,52 +224,60 @@ void	pr_l_one_line(t_files *f, t_len_ls_l l)
 	char 	*link_cont;
 
 	link_cont = NULL;
-	if (S_ISLNK(f->st.st_mode))
+	if (S_ISLNK(f->st_mode))
 	{
 		ft_putchar('l');
 		link_cont = ft_strnew(1024);
 		readlink(concat_strs(f->path ? f->path : "", f->name, NULL), link_cont, sizeof(link_cont));
 	}
-	ft_putchar(S_ISDIR(f->st.st_mode) ? 'd' : '\0');
-	ft_putchar(S_ISFIFO(f->st.st_mode) ? 'p' : '\0');
-	ft_putchar(S_ISCHR(f->st.st_mode) ? 'c' : '\0');
-	ft_putchar(S_ISBLK(f->st.st_mode) ? 'b' : '\0');
-	ft_putchar(S_ISREG(f->st.st_mode) ? '-' : '\0');
-	ft_putchar(S_ISSOCK(f->st.st_mode) ? 's' : '\0');
-	date = get_date(&f->st.st_mtimespec.tv_sec, &len);
-	ft_printf("%s%s %*d %.*s  %.*s  %*d %.*s %s%s\n", concat_strs((f->st.st_mode & S_IRUSR) ? "r" : "-", \
-	(f->st.st_mode & S_IWUSR) ? "w" : "-", (f->st.st_mode & S_IXUSR) ? "x" : "-", \
-	(f->st.st_mode & S_IRGRP) ? "r" : "-", (f->st.st_mode & S_IWGRP) ? "w" : "-", \
-	(f->st.st_mode & S_IXGRP) ? "x" : "-", (f->st.st_mode & S_IROTH) ? "r" : "-", \
-	(f->st.st_mode & S_IWOTH) ? "w" : "-", (f->st.st_mode & S_IXOTH) ? "x" : "-", NULL), \
-	(attr(f) > 0 ? "@" : " "), l.l_lmax, f->st.st_nlink, l.usr_lmax, get_usr(f->st.st_uid), \
-	l.gr_lmax, get_group(f->st.st_gid), l.sz_lmax, f->st.st_size, len, date, f->name, \
-	S_ISLNK(f->st.st_mode) ? concat_strs(" -> ", link_cont, NULL) : "");
-	if (S_ISLNK(f->st.st_mode))
+	ft_putchar(S_ISDIR(f->st_mode) ? 'd' : '\0');
+	ft_putchar(S_ISFIFO(f->st_mode) ? 'p' : '\0');
+	ft_putchar(S_ISCHR(f->st_mode) ? 'c' : '\0');
+	ft_putchar(S_ISBLK(f->st_mode) ? 'b' : '\0');
+	ft_putchar(S_ISREG(f->st_mode) ? '-' : '\0');
+	ft_putchar(S_ISSOCK(f->st_mode) ? 's' : '\0');
+	date = get_date(&f->mtime, &len);
+	/*ft_printf("%s%s %*d %.*s  %.*s  %*d %.*s %s%s\n", concat_strs((f->st_mode & S_IRUSR) ? "r" : "-", \
+	(f->st_mode & S_IWUSR) ? "w" : "-", (f->st_mode & S_IXUSR) ? "x" : "-", \
+	(f->st_mode & S_IRGRP) ? "r" : "-", (f->st_mode & S_IWGRP) ? "w" : "-", \
+	(f->st_mode & S_IXGRP) ? "x" : "-", (f->st_mode & S_IROTH) ? "r" : "-", \
+	(f->st_mode & S_IWOTH) ? "w" : "-", (f->st_mode & S_IXOTH) ? "x" : "-", NULL), \
+	(attr(f) > 0 ? "@" : " "), l.l_lmax, f->st_nlink, l.usr_lmax, get_usr(f->st_uid), \
+	l.gr_lmax, get_group(f->st_gid), l.sz_lmax, f->st_size, len, date, f->name, \
+	S_ISLNK(f->st_mode) ? concat_strs(" -> ", link_cont, NULL) : "");*/
+	ft_printf("%s%s %*d %.*s  %.*s  ", concat_strs((f->st_mode & S_IRUSR) ? "r" : "-", \
+		(f->st_mode & S_IWUSR) ? "w" : "-", (f->st_mode & S_IXUSR) ? "x" : "-", \
+		(f->st_mode & S_IRGRP) ? "r" : "-", (f->st_mode & S_IWGRP) ? "w" : "-", \
+		(f->st_mode & S_IXGRP) ? "x" : "-", (f->st_mode & S_IROTH) ? "r" : "-", \
+		(f->st_mode & S_IWOTH) ? "w" : "-", (f->st_mode & S_IXOTH) ? "x" : "-", NULL), \
+		(attr(f) > 0 ? "@" : " "), l.l_lmax, f->st_nlink, l.usr_lmax, get_usr(f->st_uid), \
+		l.gr_lmax, get_group(f->st_gid));
+	if (S_ISBLK(f->st_mode) || S_ISCHR(f->st_mode))
+		print_maj_min(f, l);
+	else
+		ft_printf("%*d", l.sz_lmax, f->st_size);
+	ft_printf(" %.*s %s%s\n", len, date, f->name, \
+			  S_ISLNK(f->st_mode) ? concat_strs(" -> ", link_cont, NULL) : "");
+	if (S_ISLNK(f->st_mode))
 		free(link_cont);
 }
 
-void	pr_l(t_files *fs, t_flags fl, int f)
+void	pr_l(t_files *fs, t_flags fl)
 {
 	int 	sz;
 	t_len_ls_l len;
 
-	len.l_lmax = 0;
-	len.usr_lmax = 0;
-	len.gr_lmax = 0;
-	len.sz_lmax = 0;
-
-	(void)f;
+	len = (t_len_ls_l){0, 0, 0, 0, 0, 0};
 	fs = find_tail(fs);
 	sz = find_total(fs, fl, &len);
-	if (!sz && !fl.a)
-		return ;
+//	if (!sz && !fl.a)
+		//return ;
 	if (fl.r)
 		fs = find_head(fs);
 	ft_printf("total %d\n", sz);
 	while (fs)
 	{
-		if (fs->f && ((fs->name[0] == '.' && fl.a) || fs->name[0] != '.'))
+		if ((fs->name[0] == '.' && fl.a) || fs->name[0] != '.')
 			pr_l_one_line(fs, len);
 		if (fl.r)
 			fs = fs->next;
@@ -414,18 +288,18 @@ void	pr_l(t_files *fs, t_flags fl, int f)
 
 void	pr(t_files *fs, t_flags fl, int f)
 {
-	size_t			ml;
+	int				ml;
 	size_t			newcol;
 	struct ttysize	ts;
 
 	if (fl.l)
-		pr_l(fs, fl, f);
+		pr_l(fs, fl);
 	else
 	{
 		ioctl(0, TIOCGSIZE, &ts);
 		if (fs)
 		{
-			ml = count_col_width(&fs);
+			ml = count_col_width(&fs, fl);
 			newcol = 0;
 			if (fl.r)
 				fs = find_head(fs);
@@ -433,11 +307,11 @@ void	pr(t_files *fs, t_flags fl, int f)
 				fs = find_tail(fs);
 			while (fs)
 			{
-				if ((!f && ((fs->f && fs->name[0] == '.' && fl.a) || (fs->f && fs->name[0] != '.'))) || \
-                    (f && !S_ISDIR(fs->st.st_mode)))
+				if ((!f && ((fs->name[0] == '.' && fl.a) || fs->name[0] != '.')) || \
+                    (f && !S_ISDIR(fs->st_mode)))
 				{
 					newcol += ml + 2;
-					ft_printf("%-*s", (int) ml + 2, fs->name);
+					ft_printf("%-*s", ml + 2, fs->name);
 					if (newcol + ml + 2 > ts.ts_cols || fl.o)
 					{
 						newcol = 0;
@@ -458,29 +332,35 @@ void	pr(t_files *fs, t_flags fl, int f)
 void	handle_av_dir(t_flags fl, char *path)
 {
 	t_files *fs;
+	t_files *fs2;
+	char 	*temp;
 
+	temp = NULL;
 	if (!(fs = handle_dir(path)))
 	{
-		perror(concat_strs("ls: ", path, NULL));
+		temp = concat_strs("ls: ", path, NULL);
+		perror(temp);
+		free(temp);
 		return ;
 	}
+	fs2 = fs;
 	pr(fs, fl, 0);
 	if (fl.br)
 	{
 		fs = find_tail(fs);
 		while (fs)
 		{
-			if (S_ISDIR(fs->st.st_mode) && ft_strcmp(fs->name, ".") && \
+			if (S_ISDIR(fs->st_mode) && ft_strcmp(fs->name, ".") && \
 				ft_strcmp(fs->name, ".."))
 			{
-				if (fs->f && ((fs->name[0] == '.' && fl.a) || fs->name[0] != '.'))
-					handle_dir_rec(concat_strs(path, path[ft_strlen(path) - 1] == '/' ? "" : "/", fs->name, NULL), fl);
-				/*handle_dir_rec(concat_strs(ft_strncmp(path, "./", 2) ? "./" : "", path[ft_strlen(path) - 1] == '/' ? "" : "/", \
-										   ft_strncmp(fs->name, "./", 2) ? fs->name : "", NULL), fl);*/
+				if ((fs->name[0] == '.' && fl.a) || fs->name[0] != '.')
+					handle_dir_rec(concat_strs(path, path[ft_strlen(path) - 1] == '/'
+													 ? "" : "/", fs->name, NULL), fl);
 			}
 			fs = fs->prev;
 		}
 	}
+	delete_dll(find_head(fs2));
 }
 
 int 	find_2_dir(t_files *fs)
@@ -490,7 +370,7 @@ int 	find_2_dir(t_files *fs)
 	res = 0;
 	while (fs)
 	{
-		if (S_ISDIR(fs->st.st_mode))
+		if (S_ISDIR(fs->st_mode))
 			res++;
 		if (res >= 2)
 			return (1);
@@ -499,36 +379,30 @@ int 	find_2_dir(t_files *fs)
 	return (0);
 }
 
-void	pr_st(t_files *head)
-{
 
-	while (head)
-	{
-		ft_printf("%d\n", head->st.st_mtimespec.tv_sec);
-		head = head->next;
-	}
-}
 
 void	handle_av(t_flags *fl, char **av) // ?? star in fl
 {
 	t_files *fs;
 	t_files *fs2;
 	struct stat st;
-	//char		*path;
 	int 		pr_pth;
+	char		*temp;
 
 	fs = NULL;
+	temp = NULL;
 	while (fl->st < fl->ac)
 	{
 		if (lstat(av[fl->st], &st) < 0)
 		{
-			//ft_puterr(concat_strs("ls: ", av[fl->st], ": No such file or directory", NULL)); //use perror!
-			perror(concat_strs("ls: ", av[fl->st], NULL));
+			temp = concat_strs("ls: ", av[fl->st], NULL);
+			perror(temp);
+			free(temp);
 		}
 		else
 		{
-			add_to_dll(&fs, NULL, av[fl->st]);
-			fs->st = st;
+			add_to_dll(&fs, ft_strdup(av[fl->st]));
+			st_cpy(fs, st);
 		}
 		fl->st++; //changed value in use???
 	}
@@ -541,10 +415,14 @@ void	handle_av(t_flags *fl, char **av) // ?? star in fl
 	fs2 = fs;
 	while (fs)
 	{
-		if (S_ISDIR(fs->st.st_mode))
+		if (S_ISDIR(fs->st_mode))
 		{
 			if (pr_pth)
-				ft_putstr(concat_strs("\n", fs->name, ":\n", NULL));
+			{
+				ft_putchar('\n');
+				ft_putstr(fs->name);
+				ft_putchar('\n');
+			}
 			handle_av_dir(*fl, fs->name);
 		}
 		fs = fs->prev;
@@ -558,8 +436,8 @@ void	handle_ls_without_av(t_flags fl)
 	t_files *fs;
 	t_files	*fs2;
 
-	fs = handle_dir("./");
-	sort_dll(fs);
+	if (!(fs = handle_dir("./")))
+		return ;
 	if (fl.t)
 		sort_dll_t(fs);
 	pr(fs, fl, 0);
@@ -569,9 +447,9 @@ void	handle_ls_without_av(t_flags fl)
 		fs = find_tail(fs);
 		while (fs)
 		{
-			if (fs->f->d_type == DT_DIR && ft_strcmp(fs->f->d_name, ".") && \
-					ft_strcmp(fs->f->d_name, ".."))
-				handle_dir_rec(concat_strs("./", fs->f->d_name, NULL), fl);
+			if (S_ISDIR(fs->st_mode) && ft_strcmp(fs->name, ".") && \
+					ft_strcmp(fs->name, ".."))
+				handle_dir_rec(concat_strs("./", fs->name, NULL), fl);
 			fs = fs->prev;
 		}
 	}
@@ -588,83 +466,8 @@ int		main(int ac, char **av)
 	else
 		handle_ls_without_av(fl);
 
-	//ft_putendl("origin");
-	//print_dll(fs);
-	/*sort_dll(fs);
-	pr(fs, &fl, 1);
-	pr(fs, &fl, 0);*/
-
-
-	/*ft_putnbr(errno);
-
-	if (!(dfd = opendir("CMakeFiles")))
-		ft_putendl("smth wrong");
-	while ((f = readdir(dfd)))
-	{
-		add_to_dll(&fs, f, ft_strdup(f->d_name));
-		if ((res = lstat(concat_strs("CMakeFiles/", f->d_name, NULL), &st)) >= 0)
-			fs->st = st;
-	//	ft_putnbr(errno);
-//		perror("");
-	}
-
-	closedir(dfd);
-	perror("");*/
-
-	//print_dll(fs);
-	//delete_dll(find_head(fs));
-	//print_dll(fs);
-	/*ft_putendl("sorted");
-	fs = find_head(fs);
-	print_dll(fs);*/
-
-	//fs = find_head(fs);
-	//ft_putendl("\nswapped");
-	//print_dll(fs);
-
-	//ft_putnbr(errno);
-	//ft_putstr("");
-	//ft_putnbr(ENOENT);
-
+	//system("leaks ft_ls");
 	if (errno == ENOENT || errno == EACCES)
 		return (1);
 	return (0);
 }
-
-
-
-
-
-
-
-
-
-
-	/*char *errstr = strerror(3);
-	errstr = strerror(2);
-	perror(errstr);*/
-	//handle_dir();
-	/*struct stat fileStat;
-	if(stat(av[1],&fileStat) < 0)
-		return 1;
-
-	printf("Information for %s\n",av[1]);
-	printf("---------------------------\n");
-	printf("File Size: \t\t%d bytes\n",fileStat.st_size);
-	printf("Number of Links: \t%d\n",fileStat.st_nlink);
-	printf("File inode: \t\t%d\n",fileStat.st_ino);
-
-	printf("File Permissions: \t");
-	printf( (S_ISDIR(fileStat.st_mode)) ? "d" : "-");
-	printf( (fileStat.st_mode & S_IRUSR) ? "r" : "-");
-	printf( (fileStat.st_mode & S_IWUSR) ? "w" : "-");
-	printf( (fileStat.st_mode & S_IXUSR) ? "x" : "-");
-	printf( (fileStat.st_mode & S_IRGRP) ? "r" : "-");
-	printf( (fileStat.st_mode & S_IWGRP) ? "w" : "-");
-	printf( (fileStat.st_mode & S_IXGRP) ? "x" : "-");
-	printf( (fileStat.st_mode & S_IROTH) ? "r" : "-");
-	printf( (fileStat.st_mode & S_IWOTH) ? "w" : "-");
-	printf( (fileStat.st_mode & S_IXOTH) ? "x" : "-");
-	printf("\n\n");
-
-	printf("The file %s a symbolic link\n", (S_ISLNK(fileStat.st_mode)) ? "is" : "is not");*/

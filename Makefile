@@ -13,7 +13,7 @@
 .PHONY:		all clean fclean re $(NAME)
 
 CFLAGS =	-Wall -Wextra -Werror
-SRC =		main.c handle_flags.c
+SRC =		main.c handle_flags.c helpers.c pr.c sort.c
 NAME =		ft_ls
 OBJFOLD =	obj/
 LIBFT =		./libft/
