@@ -78,10 +78,10 @@ t_files	*handle_dir(char *name)
 			st_cpy(fs, st);
 			free(temp);
 		}
-		if (ft_strcmp(name, "./"))
+		if (ft_strcmp(name, "./") && ft_strcmp(f->d_name, "..") && ft_strcmp(f->d_name, "."))
 			fs->path = concat_strs(name,
 								   name[ft_strlen(name) - 1] == '/' ? "" : "/",
-								   f->d_name, "/", NULL);
+								   /*f->d_name, "/",*/ NULL);
 		if (errno > 0)
 		{
 			//perror(concat_strs(name, "/", f->d_name, NULL));
@@ -178,21 +178,26 @@ int 	find_total(t_files *f, t_flags fl, t_len_ls_l *l)
 	res = 0;
 	while (f)
 	{
-		if ((temp = numlen(f->st_nlink)) > l->l_lmax)
-			l->l_lmax = (short)temp;
-		if ((temp = numlen(f->st_size)) > l->sz_lmax)
-			l->sz_lmax = (short)temp;
-		if ((temp = (int)ft_strlen(get_group(f->st_gid))) > l->gr_lmax)
-			l->gr_lmax = (short)temp;
-		if ((temp = (int)ft_strlen(get_usr(f->st_uid))) > l->l_lmax)
-			l->usr_lmax = (short)temp;
-		if (S_ISCHR(f->st_mode) || S_ISBLK(f->st_mode))
-		{
-			l->maj = numlen(major(f->st_rdev)) > l->maj ? numlen(major(f->st_rdev)) : l->maj;
-			l->min = numlen(minor(f->st_rdev)) > l->min ? numlen(minor(f->st_rdev)) : l->min;
-		}
 		if ((f->name[0] == '.' && fl.a) || f->name[0] != '.')
-			res += f->blk;
+		{
+			if ((temp = numlen(f->st_nlink)) > l->l_lmax)
+				l->l_lmax = (short)temp;
+			if ((temp = numlen(f->st_size)) > l->sz_lmax)
+				l->sz_lmax = (short)temp;
+			if ((temp = (int) ft_strlen(get_group(f->st_gid))) > l->gr_lmax)
+				l->gr_lmax = (short)temp;
+			if ((temp = (int) ft_strlen(get_usr(f->st_uid))) > l->usr_lmax)
+				l->usr_lmax = (short)temp;
+			if (S_ISCHR(f->st_mode) || S_ISBLK(f->st_mode))
+			{
+				l->maj = numlen(major(f->st_rdev)) > l->maj ? numlen(
+						major(f->st_rdev)) : l->maj;
+				l->min = numlen(minor(f->st_rdev)) > l->min ? numlen(
+						minor(f->st_rdev)) : l->min;
+			}
+			if ((f->name[0] == '.' && fl.a) || f->name[0] != '.')
+				res += f->blk;
+		}
 		f = f->prev;
 	}
 	return ((int)res);
@@ -205,8 +210,11 @@ char	*get_date(long *val, int *len)
 	str = ctime(val);
 	if (*val < time(NULL) - 15552000)
 	{
-		*len = 4;
-		return (str + 20);
+		str[11] = ' ';
+		str[12] = str[20];
+		str[13] = str[21];
+		str[14] = str[22];
+		str[15] = str[23];
 	}
 	*len = 12;
 	return (str + 4);
@@ -228,7 +236,7 @@ void	pr_l_one_line(t_files *f, t_len_ls_l l)
 	{
 		ft_putchar('l');
 		link_cont = ft_strnew(1024);
-		readlink(concat_strs(f->path ? f->path : "", f->name, NULL), link_cont, sizeof(link_cont));
+		readlink(concat_strs(f->path ? f->path : "", f->name, NULL), link_cont, 1024);
 	}
 	ft_putchar(S_ISDIR(f->st_mode) ? 'd' : '\0');
 	ft_putchar(S_ISFIFO(f->st_mode) ? 'p' : '\0');
@@ -237,15 +245,7 @@ void	pr_l_one_line(t_files *f, t_len_ls_l l)
 	ft_putchar(S_ISREG(f->st_mode) ? '-' : '\0');
 	ft_putchar(S_ISSOCK(f->st_mode) ? 's' : '\0');
 	date = get_date(&f->mtime, &len);
-	/*ft_printf("%s%s %*d %.*s  %.*s  %*d %.*s %s%s\n", concat_strs((f->st_mode & S_IRUSR) ? "r" : "-", \
-	(f->st_mode & S_IWUSR) ? "w" : "-", (f->st_mode & S_IXUSR) ? "x" : "-", \
-	(f->st_mode & S_IRGRP) ? "r" : "-", (f->st_mode & S_IWGRP) ? "w" : "-", \
-	(f->st_mode & S_IXGRP) ? "x" : "-", (f->st_mode & S_IROTH) ? "r" : "-", \
-	(f->st_mode & S_IWOTH) ? "w" : "-", (f->st_mode & S_IXOTH) ? "x" : "-", NULL), \
-	(attr(f) > 0 ? "@" : " "), l.l_lmax, f->st_nlink, l.usr_lmax, get_usr(f->st_uid), \
-	l.gr_lmax, get_group(f->st_gid), l.sz_lmax, f->st_size, len, date, f->name, \
-	S_ISLNK(f->st_mode) ? concat_strs(" -> ", link_cont, NULL) : "");*/
-	ft_printf("%s%s %*d %.*s  %.*s  ", concat_strs((f->st_mode & S_IRUSR) ? "r" : "-", \
+	ft_printf("%s%s %*d %-*s  %-*s ", concat_strs((f->st_mode & S_IRUSR) ? "r" : "-", \
 		(f->st_mode & S_IWUSR) ? "w" : "-", (f->st_mode & S_IXUSR) ? "x" : "-", \
 		(f->st_mode & S_IRGRP) ? "r" : "-", (f->st_mode & S_IWGRP) ? "w" : "-", \
 		(f->st_mode & S_IXGRP) ? "x" : "-", (f->st_mode & S_IROTH) ? "r" : "-", \
@@ -262,22 +262,37 @@ void	pr_l_one_line(t_files *f, t_len_ls_l l)
 		free(link_cont);
 }
 
-void	pr_l(t_files *fs, t_flags fl)
+int 	total_need(t_files *fs, t_flags fl, int f)
+{
+	while (fs)
+	{
+		if ((!f && ((fs->name[0] == '.' && fl.a) || fs->name[0] != '.')) || \
+                    (f && !S_ISDIR(fs->st_mode)))
+			return (1);
+		if (fl.r)
+			fs = fs->next;
+		else
+			fs = fs->prev;
+	}
+	return (0);
+}
+
+void	pr_l(t_files *fs, t_flags fl, int f)
 {
 	int 	sz;
 	t_len_ls_l len;
 
-	len = (t_len_ls_l){0, 0, 0, 0, 0, 0};
+	len = (t_len_ls_l){-1, -1, -1, -1, -1, -1};
 	fs = find_tail(fs);
 	sz = find_total(fs, fl, &len);
-//	if (!sz && !fl.a)
-		//return ;
 	if (fl.r)
 		fs = find_head(fs);
-	ft_printf("total %d\n", sz);
+	if (total_need(fs, fl, f))
+		ft_printf("total %d\n", sz);
 	while (fs)
 	{
-		if ((fs->name[0] == '.' && fl.a) || fs->name[0] != '.')
+		if ((!f && ((fs->name[0] == '.' && fl.a) || fs->name[0] != '.')) || \
+                    (f && !S_ISDIR(fs->st_mode)))
 			pr_l_one_line(fs, len);
 		if (fl.r)
 			fs = fs->next;
@@ -293,7 +308,7 @@ void	pr(t_files *fs, t_flags fl, int f)
 	struct ttysize	ts;
 
 	if (fl.l)
-		pr_l(fs, fl);
+		pr_l(fs, fl, f);
 	else
 	{
 		ioctl(0, TIOCGSIZE, &ts);
@@ -344,6 +359,8 @@ void	handle_av_dir(t_flags fl, char *path)
 		return ;
 	}
 	fs2 = fs;
+	if (fl.t)
+		sort_dll_t(fs);
 	pr(fs, fl, 0);
 	if (fl.br)
 	{
@@ -460,14 +477,18 @@ int		main(int ac, char **av)
 {
 	t_flags	fl;
 
+
+	char *lname = ft_strnew(1024);
+	readlink("/Users/amichak/CLionProjects/lem-in/t2", lname, 1024);
 	handle_flags(&fl, ac, av);
 	if (fl.st)
 		handle_av(&fl, av);
 	else
 		handle_ls_without_av(fl);
 
+
 	//system("leaks ft_ls");
-	if (errno == ENOENT || errno == EACCES)
-		return (1);
+	/*if (errno == ENOENT || errno == EACCES)
+		return (1);*/
 	return (0);
 }
