@@ -58,13 +58,13 @@ void	st_cpy(t_files *fs, struct stat st)
 	fs->st_rdev = st.st_rdev;
 }
 
-t_files	*handle_dir(char *name)
+t_files	*handle_dir(char *name, t_flags fl)
 {
-	DIR *dfd;
-	struct dirent *f;
-	struct stat st;
-	t_files *fs;
-	char	*temp; /*NU*/
+	DIR				*dfd;
+	struct dirent	*f;
+	struct stat		st;
+	t_files			*fs;
+	char			*temp;
 
 	fs = NULL;
 	temp = NULL;
@@ -72,24 +72,31 @@ t_files	*handle_dir(char *name)
 		return (NULL);
 	while ((f = readdir(dfd)))
 	{
-		add_to_dll(&fs, ft_strdup(f->d_name));
-		if (lstat(temp = concat_strs(name, name[ft_strlen(name) - 1] == '/' ? "" : "/", f->d_name, NULL), &st) >= 0)
+		if (f->d_name[0] != '.' || (f->d_name[0] == '.' && fl.a))
 		{
-			st_cpy(fs, st);
+			add_to_dll(&fs, ft_strdup(f->d_name));
+			if (lstat(temp = concat_strs(name, name[ft_strlen(name) - 1] \
+											   == '/' ? "" : "/",
+										 f->d_name, NULL), &st) >= 0)
+				st_cpy(fs, st);
 			free(temp);
-		}
-		if (ft_strcmp(name, "./") && ft_strcmp(f->d_name, "..") && ft_strcmp(f->d_name, "."))
-			fs->path = concat_strs(name,
-								   name[ft_strlen(name) - 1] == '/' ? "" : "/",
-								   /*f->d_name, "/",*/ NULL);
-		if (errno > 0)
-		{
-			//perror(concat_strs(name, "/", f->d_name, NULL));
-			//errno = 0;
+			if (ft_strcmp(name, "./") && ft_strcmp(f->d_name, "..") &&
+				ft_strcmp(f->d_name, "."))
+				fs->path = concat_strs(name,
+									   name[ft_strlen(name) - 1] == '/' ? ""
+																		: "/",
+						/*f->d_name, "/",*/ NULL);
+			if (errno > 0)
+			{
+				//perror(concat_strs(name, "/", f->d_name, NULL));
+				//errno = 0;
+			}
 		}
 	}
 	closedir(dfd);
 	sort_dll(fs);
+	if (fl.t)
+		sort_dll_t(fs);
 	return (fs);
 }
 
@@ -102,7 +109,7 @@ t_files *handle_dir_rec(char *path, t_flags fl)
 	ft_putchar('\n');
 	ft_putstr(path);
 	ft_putchar('\n');
-	fs = handle_dir(path);
+	fs = handle_dir(path, fl);
 	if (fs)
 	{
 		fs = find_tail(fs);
@@ -312,6 +319,7 @@ void	pr(t_files *fs, t_flags fl, int f)
 	else
 	{
 		ioctl(0, TIOCGSIZE, &ts);
+		ts.ts_cols = 80;
 		if (fs)
 		{
 			ml = count_col_width(&fs, fl);
@@ -350,8 +358,7 @@ void	handle_av_dir(t_flags fl, char *path)
 	t_files *fs2;
 	char 	*temp;
 
-	temp = NULL;
-	if (!(fs = handle_dir(path)))
+	if (!(fs = handle_dir(path, fl)))
 	{
 		temp = concat_strs("ls: ", path, NULL);
 		perror(temp);
@@ -359,8 +366,6 @@ void	handle_av_dir(t_flags fl, char *path)
 		return ;
 	}
 	fs2 = fs;
-	if (fl.t)
-		sort_dll_t(fs);
 	pr(fs, fl, 0);
 	if (fl.br)
 	{
@@ -380,34 +385,32 @@ void	handle_av_dir(t_flags fl, char *path)
 	delete_dll(find_head(fs2));
 }
 
-int 	find_2_dir(t_files *fs)
+int 	ft_pr_pth(t_files *fs)
 {
-	int	res;
+	int	file;
+	int	dir;
 
-	res = 0;
+	dir = 0;
+	file = 0;
 	while (fs)
 	{
 		if (S_ISDIR(fs->st_mode))
-			res++;
-		if (res >= 2)
+			dir++;
+		else
+			file = 1;
+		if ((dir && file) || dir > 1)
 			return (1);
 		fs = fs->prev;
 	}
 	return (0);
 }
 
-
-
-void	handle_av(t_flags *fl, char **av) // ?? star in fl
+t_files	*parse_av(t_files *fs, t_flags *fl, char **av)
 {
-	t_files *fs;
-	t_files *fs2;
-	struct stat st;
-	int 		pr_pth;
 	char		*temp;
+	struct stat st;
 
 	fs = NULL;
-	temp = NULL;
 	while (fl->st < fl->ac)
 	{
 		if (lstat(av[fl->st], &st) < 0)
@@ -421,15 +424,26 @@ void	handle_av(t_flags *fl, char **av) // ?? star in fl
 			add_to_dll(&fs, ft_strdup(av[fl->st]));
 			st_cpy(fs, st);
 		}
-		fl->st++; //changed value in use???
+		fl->st++;
 	}
 	sort_dll(fs);
 	if (fl->t)
 		sort_dll_t(fs);
+	return (fs);
+}
+
+void	handle_av(t_flags *fl, char **av) // ?? star in fl
+{
+	t_files *fs;
+	t_files *fs2;
+	int		pr_pth;
+
+	fs = NULL;
+	fs = parse_av(fs, fl, av);
 	pr(fs, *fl, 1);
 	fs = find_tail(fs);
-	pr_pth = find_2_dir(fs);
 	fs2 = fs;
+	pr_pth = ft_pr_pth(fs);
 	while (fs)
 	{
 		if (S_ISDIR(fs->st_mode))
@@ -438,7 +452,7 @@ void	handle_av(t_flags *fl, char **av) // ?? star in fl
 			{
 				ft_putchar('\n');
 				ft_putstr(fs->name);
-				ft_putchar('\n');
+				ft_putstr(":\n");
 			}
 			handle_av_dir(*fl, fs->name);
 		}
@@ -453,7 +467,7 @@ void	handle_ls_without_av(t_flags fl)
 	t_files *fs;
 	t_files	*fs2;
 
-	if (!(fs = handle_dir("./")))
+	if (!(fs = handle_dir("./", fl)))
 		return ;
 	if (fl.t)
 		sort_dll_t(fs);
@@ -478,8 +492,8 @@ int		main(int ac, char **av)
 	t_flags	fl;
 
 
-	char *lname = ft_strnew(1024);
-	readlink("/Users/amichak/CLionProjects/lem-in/t2", lname, 1024);
+//	char *lname = ft_strnew(1024);
+//	readlink("/Users/amichak/CLionProjects/lem-in/t2", lname, 1024);
 	handle_flags(&fl, ac, av);
 	if (fl.st)
 		handle_av(&fl, av);
