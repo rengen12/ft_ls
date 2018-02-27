@@ -28,7 +28,7 @@ void		handle_flags(t_flags *fl, int ac, char **av)
 	i = 0;
 	*fl = (t_flags){0, 0, 0, 0, 0, 0, 0, 0};
 	fl->ac = ac;
-	while (++i < ac && av[i][0] == '-')
+	while (++i < ac && av[i][0] == '-' && av[i][1])
 		while (*++av[i])
 			if (*av[i] == 'a')
 				fl->a = 1;
@@ -47,6 +47,11 @@ void		handle_flags(t_flags *fl, int ac, char **av)
 			{
 				fl->o = 1;
 				fl->l = 0;
+			}
+			else if (*av[i] == '-')
+			{
+				fl->st = (i < ac) ? i + 1 : 0;
+				return ;
 			}
 			else
 				pr_usage(*av[i]);

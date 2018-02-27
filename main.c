@@ -69,7 +69,12 @@ t_files	*handle_dir(char *name, t_flags fl)
 	fs = NULL;
 	temp = NULL;
 	if (!(dfd = opendir(name)))
+	{
+		temp = concat_strs("ls: ", ft_strrchr(name, '/') + 1, NULL);
+		perror(temp);
+		free(temp);
 		return (NULL);
+	}
 	while ((f = readdir(dfd)))
 	{
 		if (f->d_name[0] != '.' || (f->d_name[0] == '.' && fl.a))
@@ -108,6 +113,7 @@ t_files *handle_dir_rec(char *path, t_flags fl)
 
 	ft_putchar('\n');
 	ft_putstr(path);
+	ft_putchar(':');
 	ft_putchar('\n');
 	fs = handle_dir(path, fl);
 	if (fs)
@@ -138,26 +144,31 @@ int		count_col_width(t_files **fs, t_flags fl)
 
 	ml = 0;
 	if (fl.o)
-		return (-2);
+		return (-1);
 	if (fs)
 	{
 		ml = ft_strlen((*fs)->name);
+		ml += 8 - ((ml % 8) == 0 ? 8 : ml % 8);
 		while ((*fs)->prev)
 		{
 			if ((res = ft_strlen((*fs)->name)) > ml)
 				ml = res;
+			ml += 8 - ((ml % 8) == 0 ? 8 : ml % 8);
 			*fs = (*fs)->prev;
 		}
 		if ((res = ft_strlen((*fs)->name)) > ml)
 			ml = res;
+		ml += 8 - ((ml % 8) == 0 ? 8 : ml % 8);
 		while ((*fs)->next)
 		{
 			if ((res = ft_strlen((*fs)->name)) > ml)
 				ml = res;
+			ml += 8 - ((ml % 8) == 0 ? 8 : ml % 8);
 			*fs = (*fs)->next;
 		}
 		if ((res = ft_strlen((*fs)->name)) > ml)
 			ml = res;
+		ml += 8 - ((ml % 8) == 0 ? 8 : ml % 8);
 	}
 	return ((int)ml);
 }
@@ -319,10 +330,10 @@ void	pr(t_files *fs, t_flags fl, int f)
 	else
 	{
 		ioctl(0, TIOCGSIZE, &ts);
-		ts.ts_cols = 80;
+		ts.ts_cols += 8 - ((ts.ts_cols % 8) == 0 ? 8 : ts.ts_cols % 8);
 		if (fs)
 		{
-			ml = count_col_width(&fs, fl);
+ 			ml = count_col_width(&fs, fl);
 			newcol = 0;
 			if (fl.r)
 				fs = find_head(fs);
@@ -333,9 +344,9 @@ void	pr(t_files *fs, t_flags fl, int f)
 				if ((!f && ((fs->name[0] == '.' && fl.a) || fs->name[0] != '.')) || \
                     (f && !S_ISDIR(fs->st_mode)))
 				{
-					newcol += ml + 2;
-					ft_printf("%-*s", ml + 2, fs->name);
-					if (newcol + ml + 2 > ts.ts_cols || fl.o)
+					newcol += ml + 1;
+					ft_printf("%-*s", (newcol + ml + 1 >= ts.ts_cols) ? 0 : ml + 1, fs->name);
+					if (newcol + ml + 1 >= ts.ts_cols || fl.o)
 					{
 						newcol = 0;
 						ft_putchar('\n');
@@ -356,13 +367,13 @@ void	handle_av_dir(t_flags fl, char *path)
 {
 	t_files *fs;
 	t_files *fs2;
-	char 	*temp;
+	//char 	*temp;
 
 	if (!(fs = handle_dir(path, fl)))
 	{
-		temp = concat_strs("ls: ", path, NULL);
-		perror(temp);
-		free(temp);
+		//temp = concat_strs("ls: ", path, NULL);
+		//perror(temp);
+		//free(temp);
 		return ;
 	}
 	fs2 = fs;
@@ -385,7 +396,7 @@ void	handle_av_dir(t_flags fl, char *path)
 	delete_dll(find_head(fs2));
 }
 
-int 	ft_pr_pth(t_files *fs)
+int 	ft_pr_pth(t_files *fs, t_flags fl)
 {
 	int	file;
 	int	dir;
@@ -398,41 +409,68 @@ int 	ft_pr_pth(t_files *fs)
 			dir++;
 		else
 			file = 1;
-		if ((dir && file) || dir > 1)
-			return (1);
 		fs = fs->prev;
 	}
+	if (dir && file)
+		return (2);
+	if (dir > 1 || (dir && fl.st < fl.ac))
+		return (1);
 	return (0);
 }
 
-t_files	*parse_av(t_files *fs, t_flags *fl, char **av)
+void 	del_node_dll(t_files **cur)
+{
+	t_files	*prev;
+	t_files	*next;
+
+	if (*cur)
+	{
+		prev = (*cur)->prev;
+		next = (*cur)->next;
+		if (prev)
+			prev->next = (*cur)->next;
+		if (next)
+			next->prev = (*cur)->prev;
+		free((*cur)->name);
+		free(*cur);
+		*cur = prev;
+	}
+}
+
+t_files	*parse_av(t_files *fs, t_flags fl, char **av)
 {
 	char		*temp;
 	struct stat st;
-
-	fs = NULL;
-	while (fl->st < fl->ac)
+	t_files *fs2;
+	fs2 = NULL;
+	while (fl.st < fl.ac)
+			add_to_dll(&fs, ft_strdup(av[fl.st++]));
+	sort_dll(fs);
+	fs = find_tail(fs);
+	while (fs)
 	{
-		if (lstat(av[fl->st], &st) < 0)
+		if (lstat(fs->name, &st) < 0)
 		{
-			temp = concat_strs("ls: ", av[fl->st], NULL);
+			temp = concat_strs("ls: ", fs->name, NULL);
 			perror(temp);
 			free(temp);
+			del_node_dll(&fs);
+			continue ;
 		}
 		else
 		{
-			add_to_dll(&fs, ft_strdup(av[fl->st]));
 			st_cpy(fs, st);
+			fs2 = fs;
 		}
-		fl->st++;
+		fs = fs->prev;
 	}
-	sort_dll(fs);
-	if (fl->t)
-		sort_dll_t(fs);
-	return (fs);
+	sort_dll(fs2);
+	if (fl.t)
+		sort_dll_t(fs2);
+	return (fs2);
 }
 
-void	handle_av(t_flags *fl, char **av) // ?? star in fl
+void	handle_av(t_flags fl, char **av)
 {
 	t_files *fs;
 	t_files *fs2;
@@ -440,21 +478,22 @@ void	handle_av(t_flags *fl, char **av) // ?? star in fl
 
 	fs = NULL;
 	fs = parse_av(fs, fl, av);
-	pr(fs, *fl, 1);
+	pr(fs, fl, 1);
 	fs = find_tail(fs);
 	fs2 = fs;
-	pr_pth = ft_pr_pth(fs);
+	pr_pth = ft_pr_pth(fs, fl);
 	while (fs)
 	{
 		if (S_ISDIR(fs->st_mode))
 		{
 			if (pr_pth)
 			{
-				ft_putchar('\n');
+				if (pr_pth++ > 1)
+					ft_putchar('\n');
 				ft_putstr(fs->name);
 				ft_putstr(":\n");
 			}
-			handle_av_dir(*fl, fs->name);
+			handle_av_dir(fl, fs->name);
 		}
 		fs = fs->prev;
 	}
@@ -491,12 +530,14 @@ int		main(int ac, char **av)
 {
 	t_flags	fl;
 
+//	int ret;
 
 //	char *lname = ft_strnew(1024);
 //	readlink("/Users/amichak/CLionProjects/lem-in/t2", lname, 1024);
+	//ret = lstat("../libft", &st);
 	handle_flags(&fl, ac, av);
 	if (fl.st)
-		handle_av(&fl, av);
+		handle_av(fl, av);
 	else
 		handle_ls_without_av(fl);
 
