@@ -30,7 +30,9 @@ typedef struct	s_flags
 	int 	o;
 	int 	br;
 	int 	a;
+	int 	ba;
 	int 	r;
+	int 	f;
 	int 	t;
 	int 	ac;
 	int		st;

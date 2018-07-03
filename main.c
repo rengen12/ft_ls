@@ -530,11 +530,6 @@ int		main(int ac, char **av)
 {
 	t_flags	fl;
 
-//	int ret;
-
-//	char *lname = ft_strnew(1024);
-//	readlink("/Users/amichak/CLionProjects/lem-in/t2", lname, 1024);
-	//ret = lstat("../libft", &st);
 	handle_flags(&fl, ac, av);
 	if (fl.st)
 		handle_av(fl, av);
